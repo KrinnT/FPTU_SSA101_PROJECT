@@ -45,6 +45,46 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState("");
 
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(initialPosts.length >= 10);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+    const handleLoadMore = async () => {
+        setIsLoadingMore(true);
+        const nextPage = page + 1;
+        try {
+            const res = await fetch(`/api/community?page=${nextPage}&category=${selectedCategory}`);
+            if (res.ok) {
+                const newPosts = await res.json();
+                if (newPosts.length < 10) setHasMore(false);
+                setPosts([...posts, ...newPosts]);
+                setPage(nextPage);
+            }
+        } catch (e) {
+            console.error("Failed to load more");
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
+    // Reset pagination when category changes
+    const handleCategoryChange = async (catId: string) => {
+        setSelectedCategory(catId);
+        setPage(1);
+        setIsLoadingMore(true);
+        try {
+            const res = await fetch(`/api/community?page=1&category=${catId}`);
+            if (res.ok) {
+                const newPosts = await res.json();
+                setPosts(newPosts);
+                setHasMore(newPosts.length >= 10);
+            }
+        } catch (e) { } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
     const handlePost = async () => {
         if (!newPost.trim()) return;
         if (BAD_WORDS.some(word => newPost.toLowerCase().includes(word))) {
@@ -114,9 +154,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
         } catch (e) { }
     };
 
-    const filteredPosts = selectedCategory === "ALL"
-        ? posts
-        : posts.filter(p => p.category === selectedCategory);
+
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -130,8 +168,8 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`px-4 py-2 rounded-full text-xs font-medium transition-all whitespace-nowrap ${selectedCategory === cat.id
-                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                                    : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                                : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
                                 }`}
                         >
                             {cat.label}
@@ -176,12 +214,12 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
             </Card>
 
             <div className="space-y-4">
-                {filteredPosts.length === 0 && (
+                {posts.length === 0 && (
                     <div className="text-center py-10 text-muted-foreground">
                         No posts in this category yet. Be the first!
                     </div>
                 )}
-                {filteredPosts.map((post) => (
+                {posts.map((post) => (
                     <PostItem
                         key={post.id}
                         post={post}
@@ -196,6 +234,14 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                         categories={CATEGORIES}
                     />
                 ))}
+
+                {hasMore && (
+                    <div className="flex justify-center pt-4">
+                        <Button variant="ghost" onClick={handleLoadMore} disabled={isLoadingMore}>
+                            {isLoadingMore ? "Loading..." : "Load More Posts"}
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );
