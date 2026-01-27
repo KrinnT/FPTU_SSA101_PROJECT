@@ -2,179 +2,231 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Heart, Share2, AlertCircle, Reply } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { MessageSquare, Heart, AlertCircle, Reply, BookOpen, Brain, FileText, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Category Definitions
+const CATEGORIES = [
+    { id: "ALL", label: "All Posts", icon: <Globe className="w-4 h-4" /> },
+    { id: "ACADEMIC", label: "Learning Exchange", icon: <BookOpen className="w-4 h-4" /> },     // Trao đổi học tập
+    { id: "PSYCHOLOGY", label: "Psychology Support", icon: <Brain className="w-4 h-4" /> },     // Tâm lý
+    { id: "RESOURCES", label: "Documents & Exams", icon: <FileText className="w-4 h-4" /> }     // Tài liệu - đề thi
+];
+
+interface Comment {
+    id: string;
+    content: string;
+    author: { name: string; };
+    createdAt: string;
+}
 
 interface Post {
     id: string;
     content: string;
+    category: string;
     likes: number;
-    timestamp: string;
-    color: string;
-    replies?: Post[];
+    createdAt: string;
+    author: { name: string; };
+    comments: Comment[];
 }
 
-const BAD_WORDS = ["kill", "die", "stupid", "hate", "ugly", "chết", "ngu", "giết", "fuck", "bitch", "shit", "ass", "cunt", "damn", "whore", "đụ", "cặc", "lồn"]; // Expanded list per user request
+const BAD_WORDS = ["kill", "die", "stupid", "hate", "ugly", "chết", "ngu", "giết", "fuck", "bitch", "shit", "ass", "cunt", "damn", "whore", "đụ", "cặc", "lồn"];
 
 export default function ForumPage() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [newPost, setNewPost] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("ALL");
+    const [postCategory, setPostCategory] = useState("ACADEMIC"); // Default for new posts
     const [error, setError] = useState("");
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState("");
 
+    // Load from DB
     useEffect(() => {
-        const stored = localStorage.getItem("forumPosts_clean");
-        if (stored) {
-            setPosts(JSON.parse(stored));
-        } else {
-            // Seed initial data - Start fresh or empty? User said "delete history", so maybe empty seed?
-            // Let's keep one friendly welcome post.
-            const seed: Post[] = [
-                { id: "1", content: "Welcome to the new community feed! Remember to be kind.", likes: 0, timestamp: new Date().toISOString(), color: "bg-primary/10", replies: [] }
-            ];
-            setPosts(seed);
-            localStorage.setItem("forumPosts_clean", JSON.stringify(seed));
-        }
-    }, []);
+        fetchPosts();
+    }, [selectedCategory]);
 
-    const handlePost = () => {
+    const fetchPosts = async () => {
+        try {
+            const url = selectedCategory === "ALL" ? "/api/community" : `/api/community?category=${selectedCategory}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                setPosts(data);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const handlePost = async () => {
         if (!newPost.trim()) return;
 
         // Moderation
-        const hasBadWords = BAD_WORDS.some(word => newPost.toLowerCase().includes(word));
-        if (hasBadWords) {
-            setError("Your post contains content that violates our community guidelines. Please be kind.");
+        if (BAD_WORDS.some(word => newPost.toLowerCase().includes(word))) {
+            setError("Your post contains content that violates our community guidelines.");
             return;
         }
 
-        const post: Post = {
-            id: Date.now().toString(),
-            content: newPost,
-            likes: 0,
-            timestamp: new Date().toISOString(),
-            color: `bg-${["blue", "purple", "indigo", "teal"][Math.floor(Math.random() * 4)]}-500/10`,
-            replies: []
-        };
+        try {
+            const res = await fetch("/api/community", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: newPost, category: postCategory })
+            });
 
-        const updatedPosts = [post, ...posts];
-        setPosts(updatedPosts);
-        localStorage.setItem("forumPosts_clean", JSON.stringify(updatedPosts));
-        setNewPost("");
-        setError("");
+            if (res.ok) {
+                setNewPost("");
+                setError("");
+                fetchPosts(); // Refresh
+            }
+        } catch (e) { setError("Failed to post."); }
     };
 
-    const handleReply = (postId: string) => {
+    const handleReply = async (postId: string) => {
         if (!replyContent.trim()) return;
 
-        const hasBadWords = BAD_WORDS.some(word => replyContent.toLowerCase().includes(word));
-        if (hasBadWords) {
+        if (BAD_WORDS.some(word => replyContent.toLowerCase().includes(word))) {
             alert("Please be kind.");
             return;
         }
 
-        const updatedPosts = posts.map(p => {
-            if (p.id === postId) {
-                return {
-                    ...p,
-                    replies: [...(p.replies || []), {
-                        id: Date.now().toString(),
-                        content: replyContent,
-                        likes: 0,
-                        timestamp: new Date().toISOString(),
-                        color: "bg-white/5"
-                    }]
-                };
+        try {
+            const res = await fetch(`/api/community/${postId}/reply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: replyContent })
+            });
+
+            if (res.ok) {
+                setReplyContent("");
+                setReplyingTo(null);
+                fetchPosts(); // Refresh to show comment
             }
-            return p;
-        });
-
-        setPosts(updatedPosts);
-        localStorage.setItem("forumPosts_clean", JSON.stringify(updatedPosts));
-        setReplyingTo(null);
-        setReplyContent("");
+        } catch (e) { alert("Failed to reply"); }
     };
 
-    const handleLike = (id: string) => {
-        const updatedPosts = posts.map(p => {
-            if (p.id === id) return { ...p, likes: p.likes + 1 };
-            return p;
-        });
-        setPosts(updatedPosts);
-        localStorage.setItem("forumPosts_clean", JSON.stringify(updatedPosts));
-    };
-
-    const formatDate = (iso: string) => {
-        const d = new Date(iso);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const handleLike = async (id: string) => {
+        try {
+            await fetch(`/api/community/${id}/like`, { method: "POST" });
+            // Optimistic update
+            setPosts(posts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
+        } catch (e) { }
     };
 
     return (
         <div className="min-h-screen p-4 md:p-8 bg-background flex justify-center">
-            <div className="w-full max-w-2xl space-y-6">
-                <div className="space-y-2">
-                    <h1 className="text-3xl font-bold">Community Board</h1>
-                    <p className="text-muted-foreground">Share your feelings anonymously. You are not alone.</p>
+            <div className="w-full max-w-3xl space-y-6">
+                <div className="space-y-2 text-center md:text-left">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Community Board</h1>
+                    <p className="text-muted-foreground">Connect, learn, and share resources.</p>
+                </div>
+
+                {/* Filters */}
+                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    {CATEGORIES.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                                selectedCategory === cat.id
+                                    ? "bg-primary text-primary-foreground shadow-lg"
+                                    : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
+                            )}
+                        >
+                            {cat.icon} {cat.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Create Post */}
-                <Card className="glass-card">
+                <Card className="glass-card border-t-4 border-t-primary">
                     <CardContent className="pt-6 space-y-4">
                         <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-4 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground"
-                            placeholder="What's on your mind?"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-4 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground resize-none"
+                            placeholder="Share your thoughts, ask a question, or upload advice..."
                             value={newPost}
                             onChange={(e) => {
                                 setNewPost(e.target.value);
                                 if (error) setError("");
                             }}
                         />
+
+                        <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
+                            {/* Category Selector for New Post */}
+                            <div className="flex gap-2">
+                                <span className="text-xs font-medium text-muted-foreground self-center">Topic:</span>
+                                <select
+                                    value={postCategory}
+                                    onChange={(e) => setPostCategory(e.target.value)}
+                                    className="bg-white/5 border border-white/10 rounded px-2 py-1 text-sm focus:ring-primary focus:outline-none"
+                                >
+                                    <option value="ACADEMIC">Learning Exchange</option>
+                                    <option value="PSYCHOLOGY">Psychology Support</option>
+                                    <option value="RESOURCES">Documents & Exams</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+
+                            <Button onClick={handlePost} disabled={!newPost.trim()} className="w-full md:w-auto">
+                                Post to Community
+                            </Button>
+                        </div>
+
                         {error && (
-                            <div className="text-sm text-rose-500 flex items-center gap-2">
+                            <div className="text-sm text-rose-500 flex items-center gap-2 animate-pulse">
                                 <AlertCircle className="w-4 h-4" /> {error}
                             </div>
                         )}
-                        <div className="flex justify-end">
-                            <Button onClick={handlePost} disabled={!newPost.trim()}>
-                                Post Anonymously
-                            </Button>
-                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Feed */}
                 <div className="space-y-4">
+                    {posts.length === 0 && (
+                        <div className="text-center py-10 text-muted-foreground">
+                            No posts in this category yet. Be the first!
+                        </div>
+                    )}
                     {posts.map((post) => (
-                        <Card key={post.id} className={cn("glass-card border-l-4 border-l-primary", post.color)}>
-                            <CardContent className="pt-6 pb-2">
-                                <p className="text-lg leading-relaxed">{post.content}</p>
+                        <Card key={post.id} className="glass-card hover:bg-white/5 transition-colors">
+                            <CardContent className="pt-6 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <span className={cn(
+                                        "text-[10px] font-bold px-2 py-1 rounded bg-secondary uppercase tracking-wider",
+                                        post.category === "ACADEMIC" && "text-blue-400 bg-blue-500/10",
+                                        post.category === "PSYCHOLOGY" && "text-rose-400 bg-rose-500/10",
+                                        post.category === "RESOURCES" && "text-emerald-400 bg-emerald-500/10"
+                                    )}>
+                                        {CATEGORIES.find(c => c.id === post.category)?.label || post.category}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                                <p className="text-xs text-muted-foreground/50">Posted by {post.author.name || "Anonymous"}</p>
                             </CardContent>
                             <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
                                 <div className="flex justify-between w-full text-sm text-muted-foreground">
-                                    <span>{formatDate(post.timestamp)}</span>
                                     <div className="flex gap-4">
-                                        <button
-                                            onClick={() => handleLike(post.id)}
-                                            className="flex items-center gap-1 hover:text-rose-500 transition-colors"
-                                        >
-                                            <Heart className="w-4 h-4" /> {post.likes}
+                                        <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
+                                            <Heart className={cn("w-4 h-4", post.likes > 0 && "fill-rose-500 text-rose-500")} /> {post.likes}
                                         </button>
-                                        <button
-                                            onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                                            className="flex items-center gap-1 hover:text-primary transition-colors"
-                                        >
-                                            <MessageSquare className="w-4 h-4" /> Reply
+                                        <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                                            <MessageSquare className="w-4 h-4" /> {post.comments?.length || 0} Replies
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Replies Section */}
-                                {post.replies && post.replies.length > 0 && (
-                                    <div className="w-full mt-2 pl-4 border-l-2 border-white/10 space-y-2">
-                                        {post.replies.map(reply => (
-                                            <div key={reply.id} className="bg-white/5 p-2 rounded text-sm">
-                                                {reply.content}
+                                {post.comments && post.comments.length > 0 && (
+                                    <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-white/10">
+                                        {post.comments.map(reply => (
+                                            <div key={reply.id} className="bg-black/20 p-2 rounded text-sm space-y-1">
+                                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                                    <span>{reply.author.name}</span>
+                                                    <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
+                                                </div>
+                                                <p>{reply.content}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -184,13 +236,14 @@ export default function ForumPage() {
                                 {replyingTo === post.id && (
                                     <div className="w-full flex gap-2 mt-2 animate-in slide-in-from-top-2">
                                         <input
-                                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 text-sm"
-                                            placeholder="Write a reply..."
+                                            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
+                                            placeholder="Write a supportive reply..."
                                             value={replyContent}
                                             onChange={(e) => setReplyContent(e.target.value)}
+                                            onKeyDown={(e) => e.key === "Enter" && handleReply(post.id)}
                                         />
                                         <Button size="sm" onClick={() => handleReply(post.id)}>
-                                            <Reply className="w-3 h-3" />
+                                            <Reply className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 )}

@@ -1,4 +1,4 @@
-# Antigravity Kit Architecture
+# Architecture
 
 > Comprehensive AI Agent Capability Expansion Toolkit
 
@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-Antigravity Kit is a modular system consisting of:
+The system is a modular system consisting of:
 
 - **20 Specialist Agents** - Role-based AI personas
 - **36 Skills** - Domain-specific knowledge modules

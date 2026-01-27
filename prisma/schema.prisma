@@ -22,6 +22,8 @@ model User {
   flashcardDecks FlashcardDeck[]
   fixedEvents FixedEvent[]
   tasks       Task[]
+  posts       Post[]
+  comments    Comment[]
 }
 
 model Assessment {
@@ -115,3 +117,33 @@ model Task {
   
   createdAt         DateTime @default(now())
 }
+
+// --- Community System ---
+enum PostCategory {
+  ACADEMIC      // Trao đổi học tập
+  PSYCHOLOGY    // Tâm lý
+  RESOURCES     // Tài liệu - đề thi
+  OTHER
+}
+
+model Post {
+  id        String       @id @default(cuid())
+  authorId  String
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String       @db.Text
+  category  PostCategory @default(OTHER)
+  likes     Int          @default(0)
+  createdAt DateTime     @default(now())
+  comments  Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
