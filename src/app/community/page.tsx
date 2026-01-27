@@ -24,12 +24,21 @@ export default async function ForumPage() {
     });
 
     // Serialize dates for Client Component (Next.js requirement: passing objects between Server/Client)
+    // Serialize dates for Client Component (Next.js requirement: passing objects between Server/Client)
     const serializedPosts = initialPosts.map(post => ({
         ...post,
         createdAt: post.createdAt.toISOString(),
+        author: {
+            ...post.author,
+            name: post.author.name || "Anonymous"
+        },
         comments: post.comments.map(c => ({
             ...c,
-            createdAt: c.createdAt.toISOString()
+            createdAt: c.createdAt.toISOString(),
+            author: {
+                ...c.author,
+                name: c.author.name || "Anonymous"
+            }
         }))
     }));
 
