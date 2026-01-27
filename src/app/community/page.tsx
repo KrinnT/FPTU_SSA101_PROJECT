@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic"; // Ensures data is always fresh
 export default async function ForumPage() {
     // Server-side fetching
     const initialPosts = await prisma.post.findMany({
+        take: 10,
         include: {
             author: {
                 select: { name: true, email: true }
