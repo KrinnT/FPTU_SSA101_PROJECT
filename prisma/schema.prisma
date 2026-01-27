@@ -135,6 +135,10 @@ model Post {
   likes     Int          @default(0)
   createdAt DateTime     @default(now())
   comments  Comment[]
+
+  @@index([createdAt])
+  @@index([authorId])
+  @@index([category])
 }
 
 model Comment {

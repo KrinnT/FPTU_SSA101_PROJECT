@@ -1,21 +1,16 @@
-
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { unstable_cache, revalidateTag } from 'next/cache';
 
-// GET: Fetch posts (optional category filter)
-export async function GET(req: Request) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const category = searchParams.get("category");
-
+const getCachedPosts = unstable_cache(
+    async (category?: string) => {
         const whereClause = (category && category !== "ALL") ? { category: category as any } : {};
-
-        const posts = await prisma.post.findMany({
+        return await prisma.post.findMany({
             where: whereClause,
             include: {
                 author: {
-                    select: { name: true, email: true } // Don't expose sensitive info
+                    select: { name: true, email: true }
                 },
                 comments: {
                     include: {
@@ -26,8 +21,19 @@ export async function GET(req: Request) {
             },
             orderBy: { createdAt: 'desc' }
         });
+    },
+    ['community-posts'], // Key parts
+    { tags: ['community-posts'], revalidate: 60 } // Revalidate every 60s or on demand
+);
 
-        // Map to simpler structure if needed, or send as is
+// GET: Fetch posts (optional category filter)
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const category = searchParams.get("category") || undefined;
+
+        const posts = await getCachedPosts(category);
+
         return NextResponse.json(posts);
     } catch (error) {
         console.error("GET Community Error", error);
@@ -59,5 +65,7 @@ export async function POST(req: Request) {
         return NextResponse.json(post);
     } catch (error) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    } finally {
+        revalidateTag('community-posts');
     }
 }
