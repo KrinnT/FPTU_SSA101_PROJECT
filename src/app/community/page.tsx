@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { MessageSquare, Heart, AlertCircle, Reply, BookOpen, Brain, FileText, Globe } from "lucide-react";
+import { MessageSquare, Heart, AlertCircle, Reply, BookOpen, Brain, FileText, Globe, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
+import { useAuth } from "@/lib/auth-context";
 
 // Category Definitions
 const CATEGORIES = [
@@ -28,6 +29,7 @@ interface Post {
     category: string;
     likes: number;
     createdAt: string;
+    authorId: string;
     author: { name: string; };
     comments: Comment[];
 }
@@ -42,6 +44,8 @@ export default function ForumPage() {
     const [error, setError] = useState("");
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState("");
+
+    const { user } = useAuth();
 
     // Load from DB
     useEffect(() => {
@@ -112,6 +116,18 @@ export default function ForumPage() {
             // Optimistic update
             setPosts(posts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
         } catch (e) { }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this post?")) return;
+        try {
+            const res = await fetch(`/api/community/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                setPosts(posts.filter(p => p.id !== id));
+            } else {
+                alert("Failed to delete post");
+            }
+        } catch (e) { alert("Error deleting post"); }
     };
 
     return (
@@ -202,7 +218,18 @@ export default function ForumPage() {
                                         )}>
                                             {CATEGORIES.find(c => c.id === post.category)?.label || post.category}
                                         </span>
-                                        <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                            {user?.id === post.authorId && (
+                                                <button
+                                                    onClick={() => handleDelete(post.id)}
+                                                    className="text-muted-foreground hover:text-rose-500 transition-colors"
+                                                    title="Delete Post"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
                                     <p className="text-xs text-muted-foreground/50">Posted by {post.author.name || "Anonymous"}</p>
