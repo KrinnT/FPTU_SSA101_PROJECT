@@ -7,6 +7,7 @@ import { MessageSquare, Heart, AlertCircle, Reply, BookOpen, Brain, FileText, Gl
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
 import { useAuth } from "@/lib/auth-context";
+import { PostItem } from "@/components/features/community/post-item";
 
 // Category Definitions
 const CATEGORIES = [
@@ -207,77 +208,19 @@ export default function ForumPage() {
                             </div>
                         )}
                         {posts.map((post) => (
-                            <Card key={post.id} className="glass-card hover:bg-white/5 transition-colors">
-                                <CardContent className="pt-6 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <span className={cn(
-                                            "text-[10px] font-bold px-2 py-1 rounded bg-secondary uppercase tracking-wider",
-                                            post.category === "ACADEMIC" && "text-blue-400 bg-blue-500/10",
-                                            post.category === "PSYCHOLOGY" && "text-rose-400 bg-rose-500/10",
-                                            post.category === "RESOURCES" && "text-emerald-400 bg-emerald-500/10"
-                                        )}>
-                                            {CATEGORIES.find(c => c.id === post.category)?.label || post.category}
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
-                                            {user?.id === post.authorId && (
-                                                <button
-                                                    onClick={() => handleDelete(post.id)}
-                                                    className="text-muted-foreground hover:text-rose-500 transition-colors"
-                                                    title="Delete Post"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
-                                    <p className="text-xs text-muted-foreground/50">Posted by {post.author.name || "Anonymous"}</p>
-                                </CardContent>
-                                <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
-                                    <div className="flex justify-between w-full text-sm text-muted-foreground">
-                                        <div className="flex gap-4">
-                                            <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
-                                                <Heart className={cn("w-4 h-4", post.likes > 0 && "fill-rose-500 text-rose-500")} /> {post.likes}
-                                            </button>
-                                            <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                                                <MessageSquare className="w-4 h-4" /> {post.comments?.length || 0} Replies
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Replies Section */}
-                                    {post.comments && post.comments.length > 0 && (
-                                        <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-white/10">
-                                            {post.comments.map(reply => (
-                                                <div key={reply.id} className="bg-black/20 p-2 rounded text-sm space-y-1">
-                                                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                                                        <span>{reply.author.name}</span>
-                                                        <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
-                                                    </div>
-                                                    <p>{reply.content}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Reply Input */}
-                                    {replyingTo === post.id && (
-                                        <div className="w-full flex gap-2 mt-2 animate-in slide-in-from-top-2">
-                                            <input
-                                                className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
-                                                placeholder="Write a supportive reply..."
-                                                value={replyContent}
-                                                onChange={(e) => setReplyContent(e.target.value)}
-                                                onKeyDown={(e) => e.key === "Enter" && handleReply(post.id)}
-                                            />
-                                            <Button size="sm" onClick={() => handleReply(post.id)}>
-                                                <Reply className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                </CardFooter>
-                            </Card>
+                            <PostItem
+                                key={post.id}
+                                post={post}
+                                currentUserId={user?.id}
+                                onLike={handleLike}
+                                onDelete={handleDelete}
+                                onReply={(id) => setReplyingTo(replyingTo === id ? null : id)}
+                                isReplying={replyingTo === post.id}
+                                replyContent={replyContent}
+                                setReplyContent={setReplyContent}
+                                onSubmitReply={handleReply}
+                                categories={CATEGORIES}
+                            />
                         ))}
                     </div>
                 </div>
