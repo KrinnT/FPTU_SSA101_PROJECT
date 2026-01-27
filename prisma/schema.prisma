@@ -1,0 +1,47 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  phone     String?
+  password  String   // Hashed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assessments Assessment[]
+  moodLogs    MoodLog[]
+}
+
+model Assessment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  depressionScore Int
+  anxietyScore    Int
+  stressScore     Int
+  
+  createdAt       DateTime @default(now())
+}
+
+model MoodLog {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  mood     Int      // 1-5
+  energy   Int      // 0-100
+  focus    Int      // 0-100
+  emotion  String
+  note     String?
+  
+  createdAt DateTime @default(now())
+}
