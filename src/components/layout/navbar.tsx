@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, LogOut, Clock, Play, Gamepad2 } from "lucide-react";
@@ -9,6 +10,12 @@ import { useAuth } from "@/lib/auth-context";
 export function Navbar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
+
+    // Debug: Log version to help user verify deployment
+    useEffect(() => {
+        console.log("%c VERSION: DB-ISOLATION-FINAL-V2-CHECK ", "background: #000; color: #00ff00; font-size: 20px; font-weight: bold; border: 2px solid #00ff00; padding: 10px;");
+        console.log("If you see this, the NEW code is running.");
+    }, []);
 
     const psychItems = [
         { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },

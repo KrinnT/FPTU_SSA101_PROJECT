@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Psychological Support Web",
   description: "A mental health support platform for learning.",
 };
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,8 +34,6 @@ export default function RootLayout({
       >
         <AuthProvider>
           <div className="relative min-h-screen flex flex-col">
-            {/* ... (rest of layout) */}
-
             {/* Abstract Background Blobs - Keep existing */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
               <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-pulse" />
