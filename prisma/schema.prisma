@@ -18,6 +18,10 @@ model User {
 
   assessments Assessment[]
   moodLogs    MoodLog[]
+  chats       Chat[]
+  flashcardDecks FlashcardDeck[]
+  fixedEvents FixedEvent[]
+  tasks       Task[]
 }
 
 model Assessment {
@@ -44,4 +48,70 @@ model MoodLog {
   note     String?
   
   createdAt DateTime @default(now())
+}
+
+// --- Chat System ---
+model Chat {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user", "assistant", "system"
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+// --- Flashcard System ---
+model FlashcardDeck {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  color       String      // Stores Tailwind class like "bg-rose-500"
+  createdAt   DateTime    @default(now())
+  cards       Flashcard[]
+}
+
+model Flashcard {
+  id        String        @id @default(cuid())
+  deckId    String
+  deck      FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front     String
+  back      String
+  createdAt DateTime      @default(now())
+}
+
+// --- Scheduler System ---
+model FixedEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String   // "Monday", etc.
+  startTime String   // "08:00"
+  endTime   String   // "10:00"
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  duration          Int      // in hours
+  
+  // Scheduling info (if assigned)
+  scheduledDay      String?  // "Monday"
+  scheduledStartTime String? // "09:00"
+  
+  createdAt         DateTime @default(now())
 }

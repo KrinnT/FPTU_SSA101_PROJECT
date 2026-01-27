@@ -204,27 +204,31 @@ function ChatContent() {
     const [helpReason, setHelpReason] = useState<"score" | "chat" | "manual">("manual");
     const [chatState, setChatState] = useState<ChatState>(INITIAL_STATE);
 
-    // Load history on mount
+    // Load history from DB on mount
     useEffect(() => {
-        const saved = localStorage.getItem("chat_history");
-        if (saved) {
+        const fetchHistory = async () => {
             try {
-                const parsed = JSON.parse(saved);
-                // Convert string dates back to Date objects
-                const hydrated = parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
-                setMessages(hydrated);
-            } catch (e) {
-                console.error("Failed to parse chat history");
+                const res = await fetch("/api/chat");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.messages && data.messages.length > 0) {
+                        // Ensure dates are parsed
+                        const hydrated = data.messages.map((m: any) => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        }));
+                        setMessages(hydrated);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load chat history:", error);
             }
-        }
+        };
+
+        fetchHistory();
     }, []);
 
-    // Save history on changes
-    useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem("chat_history", JSON.stringify(messages));
-        }
-    }, [messages]);
+    // (Removed LocalStorage save effect - data is saved by API on send)
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -295,11 +299,13 @@ function ChatContent() {
         })();
     };
 
-    const resetChat = () => {
+    const resetChat = async () => {
         const initialMsg: Message = { id: Date.now().toString(), role: "bot", text: "Chat history cleared. How can I help you now?", timestamp: new Date(), type: "normal" };
         setMessages([initialMsg]);
         setChatState(INITIAL_STATE);
-        localStorage.removeItem("chat_history");
+
+        // TODO: Ideally call an API to delete the chat conversation from DB if desired
+        // For now, this just resets the view.
     };
 
     return (

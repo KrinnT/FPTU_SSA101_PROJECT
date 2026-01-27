@@ -47,31 +47,51 @@ function SchedulerContent() {
     const [everydayTask, setEverydayTask] = useState({ name: "", duration: 1 });
     const [normalTask, setNormalTask] = useState({ name: "", duration: 1 });
 
-    // Load from local storage
+    // Load from DB
     useEffect(() => {
-        const savedFixed = localStorage.getItem("scheduler_fixed");
-        const savedTasks = localStorage.getItem("scheduler_tasks");
-        if (savedFixed) setFixedEvents(JSON.parse(savedFixed));
-        if (savedTasks) {
-            setTasks(JSON.parse(savedTasks));
-            // If tasks have assigned slots, we consider it generated
-            if (JSON.parse(savedTasks).some((t: Task) => t.assignedSlot)) setGenerated(true);
-        }
+        const fetchData = async () => {
+            try {
+                const res = await fetch("/api/scheduler");
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // Hydrate Fixed Events
+                    setFixedEvents(data.fixedEvents || []);
+
+                    // Hydrate Tasks and map assignedSlot
+                    const hydratedTasks = (data.tasks || []).map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        duration: t.duration,
+                        assignedSlot: (t.scheduledDay && t.scheduledStartTime)
+                            ? { day: t.scheduledDay, startTime: t.scheduledStartTime }
+                            : undefined
+                    }));
+                    setTasks(hydratedTasks);
+
+                    if (hydratedTasks.some((t: Task) => t.assignedSlot)) setGenerated(true);
+                }
+            } catch (error) {
+                console.error("Failed to load scheduler data");
+            }
+        };
+        fetchData();
     }, []);
 
-    // Save to local storage
-    const saveData = (f: FixedEvent[], t: Task[]) => {
-        localStorage.setItem("scheduler_fixed", JSON.stringify(f));
-        localStorage.setItem("scheduler_tasks", JSON.stringify(t));
-    };
-
-    const addFixedEvent = () => {
+    const addFixedEvent = async () => {
         if (!newEvent.name) return;
-        const event: FixedEvent = { ...newEvent, id: Date.now().toString() };
-        const updated = [...fixedEvents, event];
-        setFixedEvents(updated);
-        saveData(updated, tasks);
-        setNewEvent({ ...newEvent, name: "" }); // Reset name only
+        try {
+            const res = await fetch("/api/scheduler/fixed", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newEvent)
+            });
+            if (res.ok) {
+                const event = await res.json();
+                setFixedEvents([...fixedEvents, event]);
+                setNewEvent({ ...newEvent, name: "" });
+            }
+        } catch (e) { console.error(e); }
     };
 
     // --- ALGORITHM ---
@@ -112,95 +132,126 @@ function SchedulerContent() {
         return undefined;
     };
 
-    const addEverydayTask = () => {
+    const addEverydayTask = async () => {
         if (!everydayTask.name) return;
 
-        // Create 7 separate tasks, one for each day
-        const newTasks: Task[] = [];
+        // Note: For "Everyday Task", we create 7 separate tasks on the backend? 
+        // Or one task repeated? The current logic creates 7 tasks. 
+        // We need to call the API 7 times or create a batch API.
+        // For simplicity, let's just loop and call create 7 times (parallel).
+
+        // However, the original logic calculates slots immediately. 
+        // We should replicate that: Calculate slots, then create tasks with those slots.
+
+        const newTasksParams: any[] = [];
         let currentFixed = fixedEvents;
-        let currentTasks = [...tasks]; // clone
+        let localTasksClone = [...tasks];
 
         DAYS.forEach(day => {
-            const taskId = `${Date.now()}-${day}`;
-            const t: Task = {
-                id: taskId,
-                name: everydayTask.name,
-                duration: everydayTask.duration,
-            };
-
-            // Find slot SPECIFICALLY for this day
-            // We can reuse findFirstAvailableSlot but we need to constrain it to just this day
-            // Or we write a simpler loop here
+            // Find slot
             let assignedSlot = undefined;
             for (const hour of TIMES) {
-                if (hour + t.duration > 23) continue;
-                if (!checkCollision(day, hour, t.duration, currentFixed, currentTasks)) {
+                if (hour + everydayTask.duration > 23) continue;
+                if (!checkCollision(day, hour, everydayTask.duration, currentFixed, localTasksClone)) {
                     assignedSlot = { day, startTime: `${hour}:00`.padStart(5, '0') };
                     break;
                 }
             }
 
             if (assignedSlot) {
-                t.assignedSlot = assignedSlot;
-            }
+                // We will create this task with the slot pre-filled
+                // But wait, 'localTasksClone' needs it to prevent collision for next day? 
+                // Actually days are independent, so no collision between these 7 tasks.
+                // But we update 'localTasksClone' in case we add more things.
+                const tempTask = {
+                    id: "temp",
+                    name: everydayTask.name,
+                    duration: everydayTask.duration,
+                    assignedSlot
+                };
+                localTasksClone.push(tempTask);
 
-            newTasks.push(t);
-            // Add to currentTasks so next iterations (different days) don't need to worry about collision with this one (since days differ)
-            // But good practice
-            currentTasks.push(t);
+                newTasksParams.push({
+                    name: everydayTask.name,
+                    duration: everydayTask.duration,
+                    scheduledDay: assignedSlot.day,
+                    scheduledStartTime: assignedSlot.startTime
+                });
+            }
         });
 
-        const updated = [...tasks, ...newTasks];
-        setTasks(updated);
-        saveData(fixedEvents, updated);
+        // Parallel Create
+        await Promise.all(newTasksParams.map(async p => {
+            const res = await fetch("/api/scheduler/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(p)
+            });
+            if (res.ok) {
+                const t = await res.json();
+                // Hydrate and add to state
+                const hydrated = {
+                    id: t.id, name: t.name, duration: t.duration,
+                    assignedSlot: (t.scheduledDay && t.scheduledStartTime) ? { day: t.scheduledDay, startTime: t.scheduledStartTime } : undefined
+                };
+                setTasks(prev => [...prev, hydrated]);
+            }
+        }));
+
         setEverydayTask({ ...everydayTask, name: "" });
-        if (newTasks.some(t => t.assignedSlot)) setGenerated(true);
+        setGenerated(true); // Since we auto-scheduled them
     };
 
-    const addNormalTask = () => {
+    const addNormalTask = async () => {
         if (!normalTask.name) return;
 
-        let task: Task = { ...normalTask, id: Date.now().toString() };
+        // Auto-schedule logic
+        const slot = findFirstAvailableSlot(normalTask.duration, fixedEvents, tasks);
 
-        // Auto-schedule
-        const slot = findFirstAvailableSlot(task.duration, fixedEvents, tasks);
-        if (slot) {
-            task.assignedSlot = slot;
-            setGenerated(true);
-        }
+        try {
+            const res = await fetch("/api/scheduler/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: normalTask.name,
+                    duration: normalTask.duration,
+                    scheduledDay: slot?.day,
+                    scheduledStartTime: slot?.startTime
+                })
+            });
 
-        const updated = [...tasks, task];
-        setTasks(updated);
-        saveData(fixedEvents, updated);
-        setNormalTask({ ...normalTask, name: "" });
+            if (res.ok) {
+                const t = await res.json();
+                const hydrated = {
+                    id: t.id, name: t.name, duration: t.duration,
+                    assignedSlot: (t.scheduledDay && t.scheduledStartTime) ? { day: t.scheduledDay, startTime: t.scheduledStartTime } : undefined
+                };
+                setTasks([...tasks, hydrated]);
+                setNormalTask({ ...normalTask, name: "" });
+                if (slot) setGenerated(true);
+            }
+        } catch (e) { console.error(e); }
     };
 
-    const removeFixed = (id: string) => {
-        const updated = fixedEvents.filter(e => e.id !== id);
-        setFixedEvents(updated);
-        saveData(updated, tasks);
-        setGenerated(false); // Reset generation
+    const removeFixed = async (id: string) => {
+        try {
+            await fetch(`/api/scheduler/fixed/${id}`, { method: "DELETE" });
+            setFixedEvents(fixedEvents.filter(e => e.id !== id));
+            // Note: We might need to re-generate or warn user that tasks might now be invalid?
+            // For now, keep it simple.
+        } catch (e) { console.error(e); }
     };
 
-    const removeTask = (id: string) => {
-        const updated = tasks.filter(t => t.id !== id);
-        setTasks(updated);
-        saveData(fixedEvents, updated);
-        setGenerated(false);
+    const removeTask = async (id: string) => {
+        try {
+            await fetch(`/api/scheduler/tasks/${id}`, { method: "DELETE" });
+            setTasks(tasks.filter(t => t.id !== id));
+        } catch (e) { console.error(e); }
     };
 
-    const generateSchedule = () => {
-        // 1. Reset all tasks
-        // We want to keep existing manual placements or re-shuffle? 
-        // usually "Generate" implies a full re-calc.
-
-
-        // Fix: Explicitly type as Task[] to avoid undefined inference
+    const generateSchedule = async () => {
+        // Recalculate all slots
         let currentTasksState: Task[] = [...tasks].map(t => ({ ...t, assignedSlot: undefined }));
-
-        // Sort tasks by duration (descending) or some heuristic? 
-        // For now keep insertion order or maybe largest first fits better.
-        // Let's just keep order.
 
         for (let i = 0; i < currentTasksState.length; i++) {
             const task = currentTasksState[i];
@@ -212,8 +263,21 @@ function SchedulerContent() {
         }
 
         setTasks(currentTasksState);
-        saveData(fixedEvents, currentTasksState);
         setGenerated(true);
+
+        // Sync updates to backend
+        try {
+            await fetch("/api/scheduler/tasks/batch", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    updates: currentTasksState.map(t => ({
+                        id: t.id,
+                        assignedSlot: t.assignedSlot
+                    }))
+                })
+            });
+        } catch (e) { console.error("Batch update failed", e); }
     };
 
     return (
@@ -229,10 +293,9 @@ function SchedulerContent() {
                             setFixedEvents([]);
                             setTasks([]);
                             setGenerated(false);
-                            localStorage.removeItem("scheduler_fixed");
-                            localStorage.removeItem("scheduler_tasks");
+                            // TODO: Add Clear API
                         }}>
-                            <RotateCcw className="w-4 h-4 mr-2" /> Reset
+                            <RotateCcw className="w-4 h-4 mr-2" /> Reset View
                         </Button>
                         <Button className="bg-primary" onClick={generateSchedule}>
                             <Calendar className="w-4 h-4 mr-2" /> Generate Schedule

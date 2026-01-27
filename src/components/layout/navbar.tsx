@@ -68,7 +68,17 @@ export function Navbar() {
 
                 {user ? (
                     <button
-                        onClick={logout}
+                        onClick={async () => {
+                            // Force clear local storage to prevent data leakage between users
+                            localStorage.removeItem("chat_history");
+                            localStorage.removeItem("psych-flashcards");
+                            localStorage.removeItem("scheduler_fixed");
+                            localStorage.removeItem("scheduler_tasks");
+                            // Clear community and exercises local storage
+                            localStorage.removeItem("forumPosts_clean");
+                            localStorage.removeItem("cbtJournal");
+                            await logout();
+                        }}
                         className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-full text-[10px] md:text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all shrink-0"
                     >
                         <LogOut className="w-4 h-4" />

@@ -27,19 +27,7 @@ interface Deck {
 }
 
 // --- Data & Helpers ---
-const PRESET_DECKS: Deck[] = [
-    {
-        id: "demo-1",
-        title: "Emotional Vocabulary",
-        description: "Words to describe feelings",
-        color: "bg-rose-500",
-        cards: [
-            { id: "c1", front: "Euphoria", back: "An intense feeling of happiness and excitement." },
-            { id: "c2", front: "Melancholy", back: "A deep, pensive, and long-lasting sadness." },
-            { id: "c3", front: "Ambivalence", back: "The state of having mixed feelings or contradictory ideas about something or someone." }
-        ]
-    }
-];
+
 
 const COLORS = [
     "bg-rose-500", "bg-orange-500", "bg-amber-500", "bg-emerald-500",
@@ -54,66 +42,88 @@ export function FlashcardSystem() {
     const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
     const [isStudyMode, setIsStudyMode] = useState(false);
 
-    // Load from LocalStorage
+    // Load from DB
     useEffect(() => {
-        const saved = localStorage.getItem("psych-flashcards");
-        if (saved) {
-            setDecks(JSON.parse(saved));
-        } else {
-            setDecks(PRESET_DECKS);
-        }
+        const fetchDecks = async () => {
+            try {
+                const res = await fetch("/api/flashcards");
+                if (res.ok) {
+                    const data = await res.json();
+                    setDecks(data);
+                }
+            } catch (error) {
+                console.error("Failed to load decks", error);
+            }
+        };
+        fetchDecks();
     }, []);
-
-    // Save to LocalStorage
-    useEffect(() => {
-        if (decks.length > 0) {
-            localStorage.setItem("psych-flashcards", JSON.stringify(decks));
-        }
-    }, [decks]);
 
     const activeDeck = decks.find(d => d.id === activeDeckId);
 
     // --- Handlers ---
-    const createDeck = (title: string, desc: string, color: string) => {
-        const newDeck: Deck = {
-            id: Date.now().toString(),
-            title,
-            description: desc,
-            color,
-            cards: []
-        };
-        setDecks([...decks, newDeck]);
-    };
+    const createDeck = async (title: string, desc: string, color: string) => {
+        try {
+            const res = await fetch("/api/flashcards", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title, description: desc, color })
+            });
 
-    const deleteDeck = (id: string) => {
-        if (confirm("Are you sure you want to delete this deck?")) {
-            setDecks(decks.filter(d => d.id !== id));
-            if (activeDeckId === id) setActiveDeckId(null);
+            if (res.ok) {
+                const newDeck = await res.json();
+                setDecks([...decks, newDeck]);
+            }
+        } catch (error) {
+            console.error("Create deck failed", error);
         }
     };
 
-    const addCard = (deckId: string, front: string, back: string) => {
-        setDecks(decks.map(d => {
-            if (d.id === deckId) {
-                return {
-                    ...d,
-                    cards: [...d.cards, { id: Date.now().toString(), front, back }]
-                };
+    const deleteDeck = async (id: string) => {
+        if (confirm("Are you sure you want to delete this deck?")) {
+            try {
+                await fetch(`/api/flashcards/${id}`, { method: "DELETE" });
+                setDecks(decks.filter(d => d.id !== id));
+                if (activeDeckId === id) setActiveDeckId(null);
+            } catch (error) {
+                console.error("Delete deck failed", error);
             }
-            return d;
-        }));
+        }
     };
 
-    const removeCard = (deckId: string, cardId: string) => {
-        setDecks(decks.map(d => {
-            if (d.id === deckId) {
-                return {
-                    ...d,
-                    cards: d.cards.filter(c => c.id !== cardId)
-                };
+    const addCard = async (deckId: string, front: string, back: string) => {
+        try {
+            const res = await fetch("/api/flashcards/cards", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ deckId, front, back })
+            });
+
+            if (res.ok) {
+                const newCard = await res.json();
+                setDecks(decks.map(d => {
+                    if (d.id === deckId) {
+                        return { ...d, cards: [...d.cards, newCard] };
+                    }
+                    return d;
+                }));
             }
-            return d;
-        }));
+        } catch (error) {
+            console.error("Add card failed", error);
+        }
+    };
+
+    const removeCard = async (deckId: string, cardId: string) => {
+        try {
+            await fetch(`/api/flashcards/cards/${cardId}`, { method: "DELETE" });
+            setDecks(decks.map(d => {
+                if (d.id === deckId) {
+                    return { ...d, cards: d.cards.filter(c => c.id !== cardId) };
+                }
+                return d;
+            }));
+        } catch (error) {
+            console.error("Remove card failed", error);
+        }
     };
 
     // --- Render ---
