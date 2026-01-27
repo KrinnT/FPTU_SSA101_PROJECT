@@ -38,8 +38,13 @@ export default function DashboardPage() {
 
         async function fetchData() {
             try {
-                // Fetch Assessment
-                const assessRes = await fetch("/api/assessment", { cache: "no-store", headers: { 'Pragma': 'no-cache' } });
+                // Fetch Data in Parallel for Speed
+                const [assessRes, moodRes] = await Promise.all([
+                    fetch("/api/assessment", { cache: "no-store", headers: { 'Pragma': 'no-cache' } }),
+                    fetch("/api/mood", { cache: "no-store", headers: { 'Pragma': 'no-cache' } })
+                ]);
+
+                // Process Assessment
                 if (assessRes.ok) {
                     const data = await assessRes.json();
                     if (data) {
@@ -56,23 +61,22 @@ export default function DashboardPage() {
                     }
                 }
 
-                // Fetch Mood History
-                const moodRes = await fetch("/api/mood", { cache: "no-store", headers: { 'Pragma': 'no-cache' } });
+                // Process Mood History
                 if (moodRes.ok) {
                     const data = await moodRes.json();
 
                     // Format data for chart (reverse to show oldest -> newest)
-                    const formattedData = data.reverse().map((item: any) => ({
+                    // Slice to last 14 days to prevent UI lag on huge datasets
+                    const recentData = data.slice(0, 14);
+                    const formattedData = recentData.reverse().map((item: any) => ({
                         ...item,
                         mood: Number(item.mood),
                         focus: Number(item.focus),
-                        date: new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' }), // e.g. "Mon"
+                        date: new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
                     }));
 
-                    // FIX: Recharts needs at least 2 points to draw a line/area.
-                    // If only 1 point, duplicate it to show a flat line.
                     if (formattedData.length === 1) {
-                        formattedData.push({ ...formattedData[0], date: "" }); // second point with empty label
+                        formattedData.push({ ...formattedData[0], date: "" });
                     }
 
                     setHistory(formattedData);
