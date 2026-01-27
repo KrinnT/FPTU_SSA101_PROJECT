@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { MessageSquare, Heart, AlertCircle, Reply, BookOpen, Brain, FileText, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ProtectedRoute from "@/components/layout/protected-route";
 
 // Category Definitions
 const CATEGORIES = [
@@ -114,144 +115,146 @@ export default function ForumPage() {
     };
 
     return (
-        <div className="min-h-screen p-4 md:p-8 bg-background flex justify-center">
-            <div className="w-full max-w-3xl space-y-6">
-                <div className="space-y-2 text-center md:text-left">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Community Board</h1>
-                    <p className="text-muted-foreground">Connect, learn, and share resources.</p>
-                </div>
+        <ProtectedRoute>
+            <div className="min-h-screen p-4 md:p-8 bg-background flex justify-center">
+                <div className="w-full max-w-3xl space-y-6">
+                    <div className="space-y-2 text-center md:text-left">
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Community Board</h1>
+                        <p className="text-muted-foreground">Connect, learn, and share resources.</p>
+                    </div>
 
-                {/* Filters */}
-                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                                selectedCategory === cat.id
-                                    ? "bg-primary text-primary-foreground shadow-lg"
-                                    : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
-                            )}
-                        >
-                            {cat.icon} {cat.label}
-                        </button>
-                    ))}
-                </div>
+                    {/* Filters */}
+                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat.id)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                                    selectedCategory === cat.id
+                                        ? "bg-primary text-primary-foreground shadow-lg"
+                                        : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
+                                )}
+                            >
+                                {cat.icon} {cat.label}
+                            </button>
+                        ))}
+                    </div>
 
-                {/* Create Post */}
-                <Card className="glass-card border-t-4 border-t-primary">
-                    <CardContent className="pt-6 space-y-4">
-                        <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-4 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground resize-none"
-                            placeholder="Share your thoughts, ask a question, or upload advice..."
-                            value={newPost}
-                            onChange={(e) => {
-                                setNewPost(e.target.value);
-                                if (error) setError("");
-                            }}
-                        />
+                    {/* Create Post */}
+                    <Card className="glass-card border-t-4 border-t-primary">
+                        <CardContent className="pt-6 space-y-4">
+                            <textarea
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-4 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground resize-none"
+                                placeholder="Share your thoughts, ask a question, or upload advice..."
+                                value={newPost}
+                                onChange={(e) => {
+                                    setNewPost(e.target.value);
+                                    if (error) setError("");
+                                }}
+                            />
 
-                        <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
-                            {/* Category Selector for New Post */}
-                            <div className="flex gap-2">
-                                <span className="text-xs font-medium text-muted-foreground self-center">Topic:</span>
-                                <select
-                                    value={postCategory}
-                                    onChange={(e) => setPostCategory(e.target.value)}
-                                    className="bg-white/5 border border-white/10 rounded px-2 py-1 text-sm focus:ring-primary focus:outline-none"
-                                >
-                                    <option value="ACADEMIC">Learning Exchange</option>
-                                    <option value="PSYCHOLOGY">Psychology Support</option>
-                                    <option value="RESOURCES">Documents & Exams</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
+                            <div className="flex flex-col md:flex-row justify-between gap-4 items-center">
+                                {/* Category Selector for New Post */}
+                                <div className="flex gap-2">
+                                    <span className="text-xs font-medium text-muted-foreground self-center">Topic:</span>
+                                    <select
+                                        value={postCategory}
+                                        onChange={(e) => setPostCategory(e.target.value)}
+                                        className="bg-white/5 border border-white/10 rounded px-2 py-1 text-sm focus:ring-primary focus:outline-none"
+                                    >
+                                        <option value="ACADEMIC">Learning Exchange</option>
+                                        <option value="PSYCHOLOGY">Psychology Support</option>
+                                        <option value="RESOURCES">Documents & Exams</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+
+                                <Button onClick={handlePost} disabled={!newPost.trim()} className="w-full md:w-auto">
+                                    Post to Community
+                                </Button>
                             </div>
 
-                            <Button onClick={handlePost} disabled={!newPost.trim()} className="w-full md:w-auto">
-                                Post to Community
-                            </Button>
-                        </div>
+                            {error && (
+                                <div className="text-sm text-rose-500 flex items-center gap-2 animate-pulse">
+                                    <AlertCircle className="w-4 h-4" /> {error}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        {error && (
-                            <div className="text-sm text-rose-500 flex items-center gap-2 animate-pulse">
-                                <AlertCircle className="w-4 h-4" /> {error}
+                    {/* Feed */}
+                    <div className="space-y-4">
+                        {posts.length === 0 && (
+                            <div className="text-center py-10 text-muted-foreground">
+                                No posts in this category yet. Be the first!
                             </div>
                         )}
-                    </CardContent>
-                </Card>
-
-                {/* Feed */}
-                <div className="space-y-4">
-                    {posts.length === 0 && (
-                        <div className="text-center py-10 text-muted-foreground">
-                            No posts in this category yet. Be the first!
-                        </div>
-                    )}
-                    {posts.map((post) => (
-                        <Card key={post.id} className="glass-card hover:bg-white/5 transition-colors">
-                            <CardContent className="pt-6 space-y-3">
-                                <div className="flex justify-between items-start">
-                                    <span className={cn(
-                                        "text-[10px] font-bold px-2 py-1 rounded bg-secondary uppercase tracking-wider",
-                                        post.category === "ACADEMIC" && "text-blue-400 bg-blue-500/10",
-                                        post.category === "PSYCHOLOGY" && "text-rose-400 bg-rose-500/10",
-                                        post.category === "RESOURCES" && "text-emerald-400 bg-emerald-500/10"
-                                    )}>
-                                        {CATEGORIES.find(c => c.id === post.category)?.label || post.category}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
-                                </div>
-                                <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
-                                <p className="text-xs text-muted-foreground/50">Posted by {post.author.name || "Anonymous"}</p>
-                            </CardContent>
-                            <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
-                                <div className="flex justify-between w-full text-sm text-muted-foreground">
-                                    <div className="flex gap-4">
-                                        <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
-                                            <Heart className={cn("w-4 h-4", post.likes > 0 && "fill-rose-500 text-rose-500")} /> {post.likes}
-                                        </button>
-                                        <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                                            <MessageSquare className="w-4 h-4" /> {post.comments?.length || 0} Replies
-                                        </button>
+                        {posts.map((post) => (
+                            <Card key={post.id} className="glass-card hover:bg-white/5 transition-colors">
+                                <CardContent className="pt-6 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <span className={cn(
+                                            "text-[10px] font-bold px-2 py-1 rounded bg-secondary uppercase tracking-wider",
+                                            post.category === "ACADEMIC" && "text-blue-400 bg-blue-500/10",
+                                            post.category === "PSYCHOLOGY" && "text-rose-400 bg-rose-500/10",
+                                            post.category === "RESOURCES" && "text-emerald-400 bg-emerald-500/10"
+                                        )}>
+                                            {CATEGORIES.find(c => c.id === post.category)?.label || post.category}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                </div>
+                                    <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                                    <p className="text-xs text-muted-foreground/50">Posted by {post.author.name || "Anonymous"}</p>
+                                </CardContent>
+                                <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
+                                    <div className="flex justify-between w-full text-sm text-muted-foreground">
+                                        <div className="flex gap-4">
+                                            <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
+                                                <Heart className={cn("w-4 h-4", post.likes > 0 && "fill-rose-500 text-rose-500")} /> {post.likes}
+                                            </button>
+                                            <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                                                <MessageSquare className="w-4 h-4" /> {post.comments?.length || 0} Replies
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                {/* Replies Section */}
-                                {post.comments && post.comments.length > 0 && (
-                                    <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-white/10">
-                                        {post.comments.map(reply => (
-                                            <div key={reply.id} className="bg-black/20 p-2 rounded text-sm space-y-1">
-                                                <div className="flex justify-between text-[10px] text-muted-foreground">
-                                                    <span>{reply.author.name}</span>
-                                                    <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
+                                    {/* Replies Section */}
+                                    {post.comments && post.comments.length > 0 && (
+                                        <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-white/10">
+                                            {post.comments.map(reply => (
+                                                <div key={reply.id} className="bg-black/20 p-2 rounded text-sm space-y-1">
+                                                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                                                        <span>{reply.author.name}</span>
+                                                        <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <p>{reply.content}</p>
                                                 </div>
-                                                <p>{reply.content}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            ))}
+                                        </div>
+                                    )}
 
-                                {/* Reply Input */}
-                                {replyingTo === post.id && (
-                                    <div className="w-full flex gap-2 mt-2 animate-in slide-in-from-top-2">
-                                        <input
-                                            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
-                                            placeholder="Write a supportive reply..."
-                                            value={replyContent}
-                                            onChange={(e) => setReplyContent(e.target.value)}
-                                            onKeyDown={(e) => e.key === "Enter" && handleReply(post.id)}
-                                        />
-                                        <Button size="sm" onClick={() => handleReply(post.id)}>
-                                            <Reply className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    ))}
+                                    {/* Reply Input */}
+                                    {replyingTo === post.id && (
+                                        <div className="w-full flex gap-2 mt-2 animate-in slide-in-from-top-2">
+                                            <input
+                                                className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
+                                                placeholder="Write a supportive reply..."
+                                                value={replyContent}
+                                                onChange={(e) => setReplyContent(e.target.value)}
+                                                onKeyDown={(e) => e.key === "Enter" && handleReply(post.id)}
+                                            />
+                                            <Button size="sm" onClick={() => handleReply(post.id)}>
+                                                <Reply className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
                 </div>
             </div>
-        </div>
+        </ProtectedRoute>
     );
 }
