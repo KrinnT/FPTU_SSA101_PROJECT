@@ -594,7 +594,7 @@ function SchedulerContent() {
                                                                     >
                                                                         <div className="font-semibold">{taskItem.name}</div>
                                                                         <div className="opacity-80 text-[9px] flex items-center gap-1">
-                                                                            <Clock className="w-2 h-2" /> {taskItem.duration}h
+                                                                            <Clock className="w-2 h-2" /> {floatToTime(startFloat)}-{floatToTime(endFloat)}
                                                                         </div>
                                                                     </div>
                                                                 );
