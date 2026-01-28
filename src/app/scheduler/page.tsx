@@ -94,23 +94,44 @@ function SchedulerContent() {
         } catch (e) { console.error(e); }
     };
 
+    // --- HELPERS ---
+    const timeToFloat = (time: string) => {
+        const [h, m] = time.split(":").map(Number);
+        return h + m / 60;
+    };
+
+    const floatToTime = (val: number) => {
+        const h = Math.floor(val);
+        const m = Math.round((val - h) * 60);
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    };
+
     // --- ALGORITHM ---
-    const checkCollision = (day: string, startHour: number, duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
-        // Check fixed
+    const checkCollision = (day: string, start: number, duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
+        const end = start + duration;
+        const BUFFER = 0.25; // 15 minutes gap
+
+        // Check fixed (Strict collision + Buffer preference? Let's strict collision + buffer to be safe)
         if (currentFixed.some(ev => {
             if (ev.day !== day) return false;
-            const evStart = parseInt(ev.startTime.split(":")[0]);
-            const evEnd = parseInt(ev.endTime.split(":")[0]);
-            return (startHour < evEnd && (startHour + duration) > evStart);
+            const evStart = timeToFloat(ev.startTime);
+            const evEnd = timeToFloat(ev.endTime);
+            // Collision if our task (with buffer padding) overlaps event
+            // Logic: (Start < EvEnd) && (End > EvStart). 
+            // We want Gap: Start >= EvEnd + Buffer OR End <= EvStart - Buffer
+            // So Collision: Start < EvEnd + Buffer && End > EvStart - Buffer
+            return (start < evEnd + BUFFER && end > evStart - BUFFER);
         })) return true;
 
-        // Check already placed tasks
+        // Check already placed tasks (Gap required)
         if (currentTasks.some(t => {
             if (t.id === ignoreTaskId) return false; // self
             if (!t.assignedSlot) return false; // not placed
             if (t.assignedSlot.day !== day) return false;
-            const tStart = parseInt(t.assignedSlot.startTime.split(":")[0]);
-            return (startHour < (tStart + t.duration) && (startHour + duration) > tStart);
+            const tStart = timeToFloat(t.assignedSlot.startTime);
+            const tEnd = tStart + t.duration;
+            // Ensure 15m gap
+            return (start < tEnd + BUFFER && end > tStart - BUFFER);
         })) return true;
 
         return false;
@@ -118,13 +139,14 @@ function SchedulerContent() {
 
     const findFirstAvailableSlot = (duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
         for (const day of DAYS) {
-            for (const hour of TIMES) { // 7, 8, ... 22
-                if (hour + duration > 23) continue; // exceed day end (allow up to 23:00 end)
+            // Step by 15 mins (0.25)
+            for (let hour = 7; hour <= 22; hour += 0.25) {
+                if (hour + duration > 23) continue;
 
                 if (!checkCollision(day, hour, duration, currentFixed, currentTasks, ignoreTaskId)) {
                     return {
                         day,
-                        startTime: `${hour}:00`.padStart(5, '0')
+                        startTime: floatToTime(hour)
                     };
                 }
             }
@@ -150,10 +172,11 @@ function SchedulerContent() {
         DAYS.forEach(day => {
             // Find slot
             let assignedSlot = undefined;
-            for (const hour of TIMES) {
+            // Step 15 mins
+            for (let hour = 7; hour <= 22; hour += 0.25) {
                 if (hour + everydayTask.duration > 23) continue;
                 if (!checkCollision(day, hour, everydayTask.duration, currentFixed, localTasksClone)) {
-                    assignedSlot = { day, startTime: `${hour}:00`.padStart(5, '0') };
+                    assignedSlot = { day, startTime: floatToTime(hour) };
                     break;
                 }
             }
@@ -504,77 +527,79 @@ function SchedulerContent() {
                                     {/* Grid */}
                                     <div className="space-y-1">
                                         {TIMES.map(hour => (
-                                            <div key={hour} className="grid grid-cols-8 gap-1 h-14">
+                                            <div key={hour} className="grid grid-cols-8 gap-1 h-14 relative group/row">
                                                 {/* Time Label */}
-                                                <div className="text-xs text-muted-foreground text-right pr-2 pt-1 border-t border-dashed border-white/10">
+                                                <div className="text-xs text-muted-foreground text-right pr-2 pt-1 border-t border-dashed border-white/10 group-first/row:border-t-0">
                                                     {hour}:00
                                                 </div>
 
                                                 {/* Day Columns */}
                                                 {DAYS.map(day => {
-                                                    // Find items here
-                                                    const fixedItem = fixedEvents.find(e =>
+                                                    // Find items STARTING in this hour (e.g. 9:00, 9:15, 9:45)
+                                                    const fixedItems = fixedEvents.filter(e =>
                                                         e.day === day &&
                                                         parseInt(e.startTime.split(":")[0]) === hour
                                                     );
 
-                                                    // Render fixed event (handle height for duration)
-                                                    if (fixedItem) {
-                                                        const duration = parseInt(fixedItem.endTime.split(":")[0]) - parseInt(fixedItem.startTime.split(":")[0]);
-                                                        return (
-                                                            <div
-                                                                key={`${day}-${hour}`}
-                                                                className="relative z-20 rounded-md bg-rose-500/80 p-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-rose-400"
-                                                                style={{ height: `${duration * 3.5}rem`, gridRow: `span ${duration}` }}
-                                                            >
-                                                                <strong>{fixedItem.name}</strong>
-                                                                <br />
-                                                                {fixedItem.startTime}-{fixedItem.endTime}
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    // Skip if inside a multi-hour fixed event (logic simplified for rendering: we only render at start time)
-                                                    // Check if this hour is covered by a previous fixed event
-                                                    const coveringFixed = fixedEvents.find(e =>
-                                                        e.day === day &&
-                                                        parseInt(e.startTime.split(":")[0]) < hour &&
-                                                        parseInt(e.endTime.split(":")[0]) > hour
-                                                    );
-                                                    if (coveringFixed) return <div key={`${day}-${hour}`} className="invisible" />; // Placeholder
-
-                                                    // Find Task
-                                                    const taskItem = tasks.find(t =>
+                                                    const taskItems = tasks.filter(t =>
                                                         t.assignedSlot?.day === day &&
                                                         parseInt(t.assignedSlot.startTime.split(":")[0]) === hour
                                                     );
 
-                                                    if (taskItem) {
-                                                        return (
-                                                            <div
-                                                                key={`${day}-${hour}`}
-                                                                className="relative z-10 rounded-md bg-blue-500/70 p-1 text-[10px] text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-blue-400"
-                                                                style={{ height: `${taskItem.duration * 3.5}rem` }}
-                                                            >
-                                                                <div className="font-semibold">{taskItem.name}</div>
-                                                                <div className="opacity-80 text-[9px] flex items-center gap-1">
-                                                                    <Clock className="w-2 h-2" /> {taskItem.duration}h
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    // Skip if covered by task
-                                                    const coveringTask = tasks.find(t =>
-                                                        t.assignedSlot?.day === day &&
-                                                        parseInt(t.assignedSlot.startTime.split(":")[0]) < hour &&
-                                                        (parseInt(t.assignedSlot.startTime.split(":")[0]) + t.duration) > hour
-                                                    );
-                                                    if (coveringTask) return <div key={`${day}-${hour}`} className="invisible" />;
-
-                                                    // Empty Cell
                                                     return (
-                                                        <div key={`${day}-${hour}`} className="rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-colors" />
+                                                        <div key={`${day}-${hour}`} className="relative h-full border-t border-dashed border-white/5">
+                                                            {/* Render Fixed Events */}
+                                                            {fixedItems.map(fixedItem => {
+                                                                const startFloat = timeToFloat(fixedItem.startTime);
+                                                                const endFloat = timeToFloat(fixedItem.endTime);
+                                                                const topOffset = (startFloat - hour) * 3.5; // rem
+                                                                const height = (endFloat - startFloat) * 3.5;
+
+                                                                return (
+                                                                    <div
+                                                                        key={fixedItem.id}
+                                                                        className="absolute z-20 w-full rounded-md bg-rose-500/80 p-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-rose-400"
+                                                                        style={{
+                                                                            top: `${topOffset}rem`,
+                                                                            height: `${height}rem`,
+                                                                            left: 0,
+                                                                            right: 0
+                                                                        }}
+                                                                    >
+                                                                        <strong>{fixedItem.name}</strong>
+                                                                        <br />
+                                                                        {fixedItem.startTime}-{fixedItem.endTime}
+                                                                    </div>
+                                                                );
+                                                            })}
+
+                                                            {/* Render Tasks */}
+                                                            {taskItems.map(taskItem => {
+                                                                if (!taskItem.assignedSlot) return null;
+                                                                const startFloat = timeToFloat(taskItem.assignedSlot.startTime);
+                                                                const endFloat = startFloat + taskItem.duration;
+                                                                const topOffset = (startFloat - hour) * 3.5; // rem
+                                                                const height = taskItem.duration * 3.5;
+
+                                                                return (
+                                                                    <div
+                                                                        key={taskItem.id}
+                                                                        className="absolute z-10 w-full rounded-md bg-blue-500/70 p-1 text-[10px] text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-blue-400"
+                                                                        style={{
+                                                                            top: `${topOffset}rem`,
+                                                                            height: `${height}rem`,
+                                                                            left: 0,
+                                                                            right: 0
+                                                                        }}
+                                                                    >
+                                                                        <div className="font-semibold">{taskItem.name}</div>
+                                                                        <div className="opacity-80 text-[9px] flex items-center gap-1">
+                                                                            <Clock className="w-2 h-2" /> {taskItem.duration}h
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     );
                                                 })}
                                             </div>
