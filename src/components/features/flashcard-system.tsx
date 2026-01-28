@@ -36,27 +36,11 @@ const COLORS = [
 
 // --- Components ---
 
-export function FlashcardSystem() {
+export function FlashcardSystem({ initialDecks = [] }: { initialDecks?: Deck[] }) {
     // State
-    const [decks, setDecks] = useState<Deck[]>([]);
+    const [decks, setDecks] = useState<Deck[]>(initialDecks);
     const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
     const [isStudyMode, setIsStudyMode] = useState(false);
-
-    // Load from DB
-    useEffect(() => {
-        const fetchDecks = async () => {
-            try {
-                const res = await fetch("/api/flashcards");
-                if (res.ok) {
-                    const data = await res.json();
-                    setDecks(data);
-                }
-            } catch (error) {
-                console.error("Failed to load decks", error);
-            }
-        };
-        fetchDecks();
-    }, []);
 
     const activeDeck = decks.find(d => d.id === activeDeckId);
 

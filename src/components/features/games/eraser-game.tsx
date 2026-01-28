@@ -79,8 +79,8 @@ export function EraserGame() {
         const mouseConstraint = MouseConstraint.create(engine, {
             mouse: mouse,
             constraint: {
-                stiffness: 0.1, // Softer drag
-                damping: 0.1,   // Less shaky
+                stiffness: 0.7, // Tighter drag (was 0.1)
+                damping: 0.5,   // More stable (was 0.1)
                 render: { visible: false },
             },
         });
@@ -257,6 +257,7 @@ export function EraserGame() {
                                 key={body.id}
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
+                                transition={{ duration: 0 }} // Force instant updates for physics sync
                                 exit={{ scale: 0, opacity: 0 }}
                                 // Events need to go to physics engine essentially, but for click detection React is simpler
                                 onClick={() => handleBodyClick(body.id)}

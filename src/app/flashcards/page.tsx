@@ -1,9 +1,30 @@
-"use client";
-
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { FlashcardSystem } from "@/components/features/flashcard-system";
 import { Sparkles } from "lucide-react";
 
-export default function FlashcardsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function FlashcardsPage() {
+    // 1. Server-side Auth Check
+    const session = await getSession();
+    if (!session || !session.user) {
+        redirect("/login");
+    }
+
+    // 2. Fetch Data Server-side
+    const rawDecks = await prisma.flashcardDeck.findMany({
+        where: { userId: session.user.id },
+        include: { cards: true },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const decks = rawDecks.map(deck => ({
+        ...deck,
+        description: deck.description || undefined // Handle null -> undefined
+    }));
+
     return (
         <div className="container max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
             {/* Header Section */}
@@ -20,7 +41,7 @@ export default function FlashcardsPage() {
             </div>
 
             {/* Main System */}
-            <FlashcardSystem />
+            <FlashcardSystem initialDecks={decks} />
         </div>
     );
 }
