@@ -13,7 +13,7 @@ export function Navbar() {
 
     // Debug: Log version to help user verify deployment
     useEffect(() => {
-        console.log("%c VERSION: DB-ISOLATION-FINAL-V2-CHECK ", "background: #000; color: #00ff00; font-size: 20px; font-weight: bold; border: 2px solid #00ff00; padding: 10px;");
+        console.log("%c VERSION: V3-FIX-LAYOUT-STREAMING ", "background: #000; color: #00ff00; font-size: 20px; font-weight: bold; border: 2px solid #00ff00; padding: 10px;");
         console.log("If you see this, the NEW code is running.");
     }, []);
 
