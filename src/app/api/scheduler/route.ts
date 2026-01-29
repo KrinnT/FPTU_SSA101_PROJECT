@@ -21,3 +21,22 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+// DELETE: Clear all scheduler data for user (Reset)
+export async function DELETE(req: Request) {
+    try {
+        const session = await getSession();
+        if (!session || !session.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        await prisma.$transaction([
+            prisma.task.deleteMany({ where: { userId: session.user.id } }),
+            prisma.fixedEvent.deleteMany({ where: { userId: session.user.id } })
+        ]);
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

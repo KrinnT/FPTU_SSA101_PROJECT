@@ -26,6 +26,7 @@ model User {
   comments    Comment[]
 }
 
+
 model Assessment {
   id              String   @id @default(cuid())
   userId          String
@@ -36,6 +37,8 @@ model Assessment {
   stressScore     Int
   
   createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model MoodLog {
@@ -50,6 +53,8 @@ model MoodLog {
   note     String?
   
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // --- Chat System ---
@@ -60,6 +65,8 @@ model Chat {
   title     String
   createdAt DateTime  @default(now())
   messages  Message[]
+
+  @@index([userId, createdAt])
 }
 
 model Message {
@@ -69,6 +76,8 @@ model Message {
   role      String   // "user", "assistant", "system"
   content   String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
 }
 
 // --- Flashcard System ---
@@ -81,6 +90,8 @@ model FlashcardDeck {
   color       String      // Stores Tailwind class like "bg-rose-500"
   createdAt   DateTime    @default(now())
   cards       Flashcard[]
+
+  @@index([userId, createdAt])
 }
 
 model Flashcard {
@@ -90,6 +101,8 @@ model Flashcard {
   front     String
   back      String
   createdAt DateTime      @default(now())
+
+  @@index([deckId])
 }
 
 // --- Scheduler System ---
@@ -102,6 +115,8 @@ model FixedEvent {
   endTime   String   // "10:00"
   name      String
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Task {
@@ -116,6 +131,8 @@ model Task {
   scheduledStartTime String? // "09:00"
   
   createdAt         DateTime @default(now())
+
+  @@index([userId])
 }
 
 // --- Community System ---
@@ -149,5 +166,7 @@ model Comment {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   content   String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([postId])
 }
 

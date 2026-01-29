@@ -312,11 +312,13 @@ function SchedulerContent() {
                         <p className="text-muted-foreground">Auto-generate your perfect study week based on your free time.</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => {
+                        <Button variant="outline" onClick={async () => {
+                            // Clear DB
+                            await fetch("/api/scheduler", { method: "DELETE" });
+                            // Clear Local State
                             setFixedEvents([]);
                             setTasks([]);
                             setGenerated(false);
-                            // TODO: Add Clear API
                         }}>
                             <RotateCcw className="w-4 h-4 mr-2" /> Reset View
                         </Button>
@@ -553,7 +555,11 @@ function SchedulerContent() {
                                                                 const startFloat = timeToFloat(fixedItem.startTime);
                                                                 const endFloat = timeToFloat(fixedItem.endTime);
                                                                 const topOffset = (startFloat - hour) * 3.5; // rem
-                                                                const height = (endFloat - startFloat) * 3.5;
+
+                                                                // Calculate height with gap compensation
+                                                                // Each hour crossed adds 0.25rem (gap-1)
+                                                                const crossedGaps = Math.floor(endFloat - 0.001) - Math.floor(startFloat);
+                                                                const height = (endFloat - startFloat) * 3.5 + (crossedGaps * 0.25);
 
                                                                 return (
                                                                     <div
@@ -579,7 +585,10 @@ function SchedulerContent() {
                                                                 const startFloat = timeToFloat(taskItem.assignedSlot.startTime);
                                                                 const endFloat = startFloat + taskItem.duration;
                                                                 const topOffset = (startFloat - hour) * 3.5; // rem
-                                                                const height = taskItem.duration * 3.5;
+
+                                                                // Calculate height with gap compensation
+                                                                const crossedGaps = Math.floor(endFloat - 0.001) - Math.floor(startFloat);
+                                                                const height = taskItem.duration * 3.5 + (crossedGaps * 0.25);
 
                                                                 return (
                                                                     <div
