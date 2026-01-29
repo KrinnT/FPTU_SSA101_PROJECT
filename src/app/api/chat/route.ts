@@ -121,15 +121,19 @@ export async function POST(req: Request) {
         const decoder = new TextDecoder();
 
         let fullReply = "";
+        let buffer = ""; // Buffer for partial lines
 
         const transformStream = new TransformStream({
             async transform(chunk, controller) {
-                const text = decoder.decode(chunk);
-                const lines = text.split('\n');
+                const text = decoder.decode(chunk, { stream: true });
+                buffer += text;
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ""; // Keep the last partial line in buffer
 
                 for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
+                    if (line.trim().startsWith('data: ')) {
+                        const data = line.trim().slice(6);
                         if (data === '[DONE]') continue;
 
                         try {
@@ -140,7 +144,7 @@ export async function POST(req: Request) {
                                 controller.enqueue(encoder.encode(content));
                             }
                         } catch (e) {
-                            // Ignore parse errors for partial chunks
+                            // Only ignore true parse errors (though with buffering, these should be rare)
                         }
                     }
                 }

@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function FocusPage() {
     return (
-        <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+        <div className="min-h-screen bg-black flex flex-col relative overflow-hidden">
             {/* Background Blobs - Similar to layout but isolated */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-indigo-500/10 blur-[150px] animate-pulse" />
