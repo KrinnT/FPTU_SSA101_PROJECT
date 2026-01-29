@@ -238,7 +238,7 @@ function ChatContent() {
         }
     }, [messages, isTyping]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!input.trim()) return;
 
         const userMsg: Message = { id: Date.now().toString(), role: "user", text: input, timestamp: new Date() };
@@ -254,49 +254,68 @@ function ChatContent() {
             setShowHelpModal(true);
         }
 
-        (async () => {
-            try {
-                const response = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        messages: [
-                            ...messages.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text })),
-                            { role: "user", content: userMsg.text }
-                        ]
-                    })
-                });
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [
+                        ...messages.map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text })),
+                        { role: "user", content: userMsg.text }
+                    ]
+                })
+            });
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.error || "API Request Failed");
-                }
-
-                const data = await response.json();
-
-                const botMsg: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: "bot",
-                    text: data.reply,
-                    timestamp: new Date(),
-                    type: "normal"
-                };
-                setMessages(prev => [...prev, botMsg]);
-
-            } catch (error: any) {
-                console.error(error);
-                const errorMsg: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: "bot",
-                    text: `Error: ${error.message || "Connection failed"}. Please check your API usage or try again.`,
-                    timestamp: new Date(),
-                    type: "normal"
-                };
-                setMessages(prev => [...prev, errorMsg]);
-            } finally {
-                setIsTyping(false);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || "API Request Failed");
             }
-        })();
+
+            if (!response.body) throw new Error("No response body");
+
+            // Create placeholder for bot message
+            const botMsgId = (Date.now() + 1).toString();
+            const botMsg: Message = {
+                id: botMsgId,
+                role: "bot",
+                text: "",
+                timestamp: new Date(),
+                type: "normal"
+            };
+            setMessages(prev => [...prev, botMsg]);
+
+            // Stream Reader
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
+
+            while (!done) {
+                const { value, done: doneReading } = await reader.read();
+                done = doneReading;
+                const chunkValue = decoder.decode(value, { stream: true });
+
+                if (chunkValue) {
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === botMsgId
+                            ? { ...msg, text: msg.text + chunkValue }
+                            : msg
+                    ));
+                }
+            }
+
+        } catch (error: any) {
+            console.error(error);
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: "bot",
+                text: `Error: ${error.message || "Connection failed"}. Please check your API usage or try again.`,
+                timestamp: new Date(),
+                type: "normal"
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     const resetChat = async () => {
@@ -316,7 +335,7 @@ function ChatContent() {
                 reason={helpReason}
             />
 
-            <Card className="w-full max-w-3xl h-[80vh] flex flex-col glass-card relative overflow-hidden">
+            <Card className="w-full max-w-3xl h-[85dvh] flex flex-col glass-card relative overflow-hidden">
                 <CardHeader className="border-b border-white/10 relative z-10 flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                         <Bot className="w-6 h-6 text-primary" />

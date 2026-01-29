@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const API_KEY = "sk-pE3s1y9Rcxz8AyAn2jh6bRrHbjhb5";
+const API_KEY = process.env.CHAT_API_KEY;
 
 // --- GET: Fetch Chat History ---
 export async function GET(req: Request) {
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     }
 }
 
-// --- POST: Send Message & Reply ---
+// --- POST: Send Message & Reply (Streaming) ---
 export async function POST(req: Request) {
     try {
         const session = await getSession();
@@ -56,17 +56,12 @@ export async function POST(req: Request) {
         const userId = session.user.id;
         const body = await req.json();
         const { messages } = body;
-        // Frontend sends WHOLE history array including the new user message at the end.
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return NextResponse.json({ error: "Invalid messages format" }, { status: 400 });
         }
 
-        const lastUserMessage = messages[messages.length - 1]; // The new one
-        if (lastUserMessage.role !== 'user') {
-            // If frontend logic sends something else, handle gracefully?
-            // But usually the last one IS the user's prompt.
-        }
+        const lastUserMessage = messages[messages.length - 1];
 
         // 1. Find or Create Chat
         let chat = await prisma.chat.findFirst({
@@ -84,10 +79,6 @@ export async function POST(req: Request) {
         }
 
         // 2. Save User Message to DB
-        // (Only save the NEW one. We assume the previous ones are already there or we don't duplicate them)
-        // Check if we should sync entire history? No, that's heavy.
-        // We assume the frontend state matches the DB state mostly.
-
         await prisma.message.create({
             data: {
                 chatId: chat.id,
@@ -96,7 +87,7 @@ export async function POST(req: Request) {
             }
         });
 
-        // 3. Call AI API
+        // 3. Call AI API with Streaming
         const response = await fetch("https://api.apifree.ai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -105,12 +96,13 @@ export async function POST(req: Request) {
             },
             body: JSON.stringify({
                 "model": "openai/gpt-5", // API specific model
+                "stream": true, // ENABLE STREAMING
                 "messages": [
                     {
                         "role": "system",
                         "content": "You are a compassionate, supportive, and knowledgeable mental health and study companion for students. Your goal is to listen without judgment, offer empathetic support, and provide practical study or stress-management advice when appropriate. If a user seems to be in immediate danger (suicidal), urge them to seek professional help immediately, but remain calm and supportive. Keep responses concise and natural."
                     },
-                    ...messages // Pass full context to AI
+                    ...messages
                 ]
             })
         });
@@ -121,19 +113,63 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: `OpenRouter Error: ${errorText}` }, { status: 500 });
         }
 
-        const data = await response.json();
-        const reply = data.choices[0]?.message?.content || "I couldn't generate a response.";
+        // 4. Transform Stream for Client + DB Saving
+        // We need to parse the SSE (Server-Sent Events) from the AI API
+        // and forward just the text content to the client, while accumulating full text.
 
-        // 4. Save Bot Reply to DB
-        await prisma.message.create({
-            data: {
-                chatId: chat.id,
-                role: 'assistant',
-                content: reply
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+
+        let fullReply = "";
+
+        const transformStream = new TransformStream({
+            async transform(chunk, controller) {
+                const text = decoder.decode(chunk);
+                const lines = text.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+                            const content = json.choices[0]?.delta?.content || "";
+                            if (content) {
+                                fullReply += content;
+                                controller.enqueue(encoder.encode(content));
+                            }
+                        } catch (e) {
+                            // Ignore parse errors for partial chunks
+                        }
+                    }
+                }
+            },
+            async flush() {
+                // Stream finished, save to DB
+                if (fullReply) {
+                    try {
+                        await prisma.message.create({
+                            data: {
+                                chatId: chat.id,
+                                role: 'assistant',
+                                content: fullReply
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Failed to save bot reply to DB:", e);
+                    }
+                }
             }
         });
 
-        return NextResponse.json({ reply });
+        // Pipe the AI response body through our transformer
+        // @ts-ignore
+        const stream = response.body.pipeThrough(transformStream);
+
+        return new NextResponse(stream, {
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
 
     } catch (error) {
         console.error("Server Error:", error);
