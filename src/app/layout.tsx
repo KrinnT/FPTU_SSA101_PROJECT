@@ -14,7 +14,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Psychological Support Web",
+  title: "CHATGPT Team Support Web",
   description: "A mental health support platform for learning.",
 };
 

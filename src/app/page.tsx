@@ -103,7 +103,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="py-8 border-t border-border/40 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Psych Support Web. Built for Students.</p>
+        <p>&copy; {new Date().getFullYear()} CHATGPT Team Support Web. Built for Students.</p>
       </footer>
     </div>
   );

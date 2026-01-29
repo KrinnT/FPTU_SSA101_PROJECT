@@ -105,10 +105,10 @@ export function FocusTimer() {
         if (isActive) {
             document.title = `(${formatTime(timeLeft)}) Focus Mode`;
         } else {
-            document.title = "Psych Support | Focus";
+            document.title = "CHATGPT Team Support | Focus";
         }
         return () => {
-            document.title = "Psych Support";
+            document.title = "CHATGPT Team Support";
         };
     }, [timeLeft, isActive]);
 

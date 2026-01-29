@@ -22,9 +22,15 @@ export default function RegisterPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        const isEmail = identifier.includes("@");
-        const email = isEmail ? identifier : "";
-        const phone = isEmail ? "" : identifier;
+        // Enforce Email Only
+        if (!identifier.includes("@") || !identifier.includes(".")) {
+            alert("Please enter a valid email address.");
+            setIsLoading(false);
+            return;
+        }
+
+        const email = identifier;
+        const phone = ""; // Disable phone registration
 
         const response = await register(name, email, phone, password);
 
@@ -65,11 +71,11 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="identifier">Email or Phone Number</Label>
+                            <Label htmlFor="identifier">Email Address</Label>
                             <Input
                                 id="identifier"
-                                type="text"
-                                placeholder="Email or Phone Number"
+                                type="email"
+                                placeholder="name@example.com"
                                 required
                                 value={identifier}
                                 onChange={(e) => setIdentifier(e.target.value)}
