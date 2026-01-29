@@ -11,6 +11,7 @@ import { CrisisFloatingButton } from "@/components/features/crisis-button";
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

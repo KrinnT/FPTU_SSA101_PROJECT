@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
-} from "recharts";
+// Removed imports since we moved them to the child component
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Plus, NotebookPen, BarChart3, Activity, Download, AlertTriangle, PhoneCall, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import dynamic from 'next/dynamic';
+
+const MoodTrendChart = dynamic(() => import("./mood-trend-chart"), {
+    ssr: false,
+    loading: () => <div className="h-full w-full flex items-center justify-center bg-gray-100/5 rounded-xl animate-pulse">Loading Chart...</div>
+});
 
 interface DashboardClientProps {
     user: any;
@@ -292,50 +296,7 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="h-[300px]">
-                            {history.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={history}>
-                                        <defs>
-                                            <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis domain={[0, 6]} hide />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: 'var(--color-card)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                            itemStyle={{ color: 'var(--color-foreground)' }}
-                                        />
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="mood"
-                                            stroke="#0ea5e9"
-                                            fillOpacity={1}
-                                            fill="url(#colorMood)"
-                                            strokeWidth={3}
-                                            name="Mood Score"
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="focus"
-                                            stroke="#0d9488"
-                                            strokeWidth={2}
-                                            strokeDasharray="5 5"
-                                            dot={false}
-                                            name="Focus Level"
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-                                    <p>No daily data yet.</p>
-                                    <Button variant="outline" size="sm" onClick={() => setShowCheckIn(true)}>
-                                        <Plus className="w-4 h-4 mr-2" /> Add First Check-in
-                                    </Button>
-                                </div>
-                            )}
+                            <MoodTrendChart history={history} onAddCheckIn={() => setShowCheckIn(true)} />
                         </CardContent>
                     </Card>
 
