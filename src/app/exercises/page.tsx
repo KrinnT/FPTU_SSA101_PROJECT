@@ -118,7 +118,7 @@ function ExercisesContent() {
     };
 
     return (
-        <div className="min-h-screen p-4 md:p-8 bg-background flex flex-col items-center">
+        <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
             <div className="w-full max-w-4xl space-y-8">
                 <div className="text-center space-y-2">
                     <h1 className="text-3xl font-bold">Coping Toolkit</h1>

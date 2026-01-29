@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 const API_KEY = process.env.CHAT_API_KEY;
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Extend timeout for streaming
 
 // --- GET: Fetch Chat History ---
 export async function GET(req: Request) {
