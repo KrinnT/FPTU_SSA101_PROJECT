@@ -35,7 +35,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="relative min-h-screen flex flex-col">
             {/* Abstract Background Blobs - Keep existing */}
-            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none hidden md:block">
               <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-pulse" />
               <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/20 blur-[120px] animate-pulse delay-1000" />
             </div>

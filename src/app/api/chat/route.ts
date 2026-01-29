@@ -174,7 +174,11 @@ export async function POST(req: Request) {
         const stream = response.body.pipeThrough(transformStream);
 
         return new NextResponse(stream, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache, no-transform',
+                'Connection': 'keep-alive',
+            }
         });
 
     } catch (error) {
