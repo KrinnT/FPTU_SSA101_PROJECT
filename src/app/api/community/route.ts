@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { unstable_cache, revalidatePath } from 'next/cache';
+import { unstable_cache, revalidatePath, revalidateTag } from 'next/cache';
 
 const getCachedPosts = unstable_cache(
     async (category?: string, page: number = 1, limit: number = 10) => {
@@ -94,6 +94,8 @@ export async function POST(req: Request) {
     } catch (error) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     } finally {
-        revalidatePath('/community');
+        // @ts-ignore
+        revalidateTag('community-posts'); // Invalidates the unstable_cache
+        revalidatePath('/community'); // Invalidates the page
     }
 }

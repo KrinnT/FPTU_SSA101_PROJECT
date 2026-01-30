@@ -17,12 +17,20 @@ export default async function DashboardPage() {
     const [assessment, moodLogs] = await Promise.all([
         prisma.assessment.findFirst({
             where: { userId: session.user.id },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            select: { depressionScore: true, anxietyScore: true, stressScore: true } // Only scores
         }),
         prisma.moodLog.findMany({
             where: { userId: session.user.id },
             orderBy: { createdAt: 'desc' },
-            take: 14 // Limit to 14 days
+            take: 14,
+            select: {
+                mood: true,
+                focus: true,
+                createdAt: true,
+                emotion: true,
+                energy: true // Needed for chart/logic
+            }
         })
     ]);
 
