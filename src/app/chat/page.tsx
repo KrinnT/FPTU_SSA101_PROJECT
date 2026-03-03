@@ -295,11 +295,12 @@ function ChatContent() {
                 const chunkValue = decoder.decode(value, { stream: true });
 
                 if (chunkValue) {
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === botMsgId
-                            ? { ...msg, text: msg.text + chunkValue }
-                            : msg
-                    ));
+                    setMessages(prev => prev.map(msg => {
+                        if (msg.id === botMsgId) {
+                            return { ...msg, text: msg.text + chunkValue };
+                        }
+                        return msg;
+                    }));
                 }
             }
 

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Circle, Wind, Music, Gamepad2, Loader2 } from "lucide-react";
+import { Circle, Palette, Music, Gamepad2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Lazy load games to reduce initial bundle size (especially matter.js)
-const BreathingGame = dynamic(() => import("./games/breathing-game").then(mod => mod.BreathingGame), {
+const ColorByNumberGame = dynamic(() => import("./games/color-by-number").then(mod => mod.ColorByNumberGame), {
     loading: () => <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>,
     ssr: false
 });
@@ -20,7 +20,7 @@ const BubblePopGame = dynamic(() => import("./games/bubble-pop").then(mod => mod
 });
 
 export function StressGamesHub() {
-    const [activeGame, setActiveGame] = useState<"bubble" | "breathing" | "ambient">("bubble");
+    const [activeGame, setActiveGame] = useState<"bubble" | "color" | "ambient">("bubble");
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -37,13 +37,13 @@ export function StressGamesHub() {
                         <Circle className="w-4 h-4" /> Bubble Pop
                     </button>
                     <button
-                        onClick={() => setActiveGame("breathing")}
+                        onClick={() => setActiveGame("color")}
                         className={cn(
                             "flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                            activeGame === "breathing" ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
+                            activeGame === "color" ? "bg-background shadow-md text-primary" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        <Wind className="w-4 h-4" /> Breathing
+                        <Palette className="w-4 h-4" /> Color By Number
                     </button>
                     <button
                         onClick={() => setActiveGame("ambient")}
@@ -63,12 +63,12 @@ export function StressGamesHub() {
                 <div className={cn(
                     "absolute inset-0 opacity-10 blur-[100px] transition-colors duration-1000",
                     activeGame === "bubble" ? "bg-cyan-500/20" :
-                        activeGame === "breathing" ? "bg-teal-500/20" : "bg-purple-500/20"
+                        activeGame === "color" ? "bg-violet-500/20" : "bg-purple-500/20"
                 )} />
 
                 <div className="relative z-10 w-full h-full max-w-4xl">
                     {activeGame === "bubble" && <BubblePopGame />}
-                    {activeGame === "breathing" && <BreathingGame />}
+                    {activeGame === "color" && <ColorByNumberGame />}
                     {activeGame === "ambient" && <AmbientGame />}
                 </div>
             </div>
