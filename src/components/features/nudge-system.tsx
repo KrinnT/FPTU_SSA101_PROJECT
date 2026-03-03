@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Clock, Settings, Heart, Coffee, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 
 const MESSAGES = [
     { text: "Bạn không cần hoàn hảo để tiến bộ.", type: "motivation", icon: <Heart className="w-5 h-5 text-rose-400" /> },
@@ -22,6 +23,7 @@ function WindIcon() {
 }
 
 export function NudgeSystem() {
+    const { user } = useAuth();
     const [isVisible, setIsVisible] = useState(false);
     const [message, setMessage] = useState(MESSAGES[0]);
     const [frequency, setFrequency] = useState(30); // minutes
@@ -29,6 +31,11 @@ export function NudgeSystem() {
     const [nextTime, setNextTime] = useState(Date.now() + 5000); // Start 5s after load for demo
 
     useEffect(() => {
+        if (!user) {
+            setIsVisible(false); // Hide immediately if logged out
+            return;
+        }
+
         // Check every 5 seconds if it's time to nudge
         const interval = setInterval(() => {
             if (Date.now() >= nextTime && !isVisible) {
@@ -37,7 +44,7 @@ export function NudgeSystem() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [nextTime, isVisible]);
+    }, [nextTime, isVisible, user]);
 
     const triggerNudge = () => {
         const randomMsg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
@@ -68,7 +75,7 @@ export function NudgeSystem() {
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="fixed bottom-6 right-6 z-50 max-w-sm w-full"
+                        className="fixed bottom-[100px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 z-50 md:w-96"
                     >
                         <div className="glass-card p-4 rounded-2xl shadow-2xl border-l-4 border-l-primary flex items-start gap-4 relative overflow-hidden backdrop-blur-xl bg-background/80">
                             {/* Icon Blob */}

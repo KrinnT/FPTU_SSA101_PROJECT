@@ -33,7 +33,7 @@ const CATEGORIES = [
     { id: "OTHER", label: "General Support" }
 ];
 
-const BAD_WORDS = ["kill", "die", "stupid", "hate", "ugly", "chết", "ngu", "giết", "fuck", "bitch", "shit", "ass", "cunt", "damn", "whore", "đụ", "cặc", "lồn"];
+const BAD_WORDS = ["kill", "die", "stupid", "hate", "ugly", "chết", "ngu", "giết", "fuck", "bitch", "shit", "ass", "cunt", "damn", "whore", "đụ", "cặc", "lồn", "rau má"];
 
 export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
     const { user } = useAuth();
