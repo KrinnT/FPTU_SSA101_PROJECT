@@ -119,8 +119,8 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
     const hasAssessment = !!assessmentData;
 
     return (
-        <div className="min-h-screen p-4 md:p-8 space-y-8 bg-background">
-            <div className="max-w-6xl mx-auto space-y-8">
+        <div className="min-h-screen p-4 md:p-8 space-y-8 bg-background max-w-[100vw] overflow-x-hidden">
+            <div className="max-w-6xl mx-auto space-y-8 w-full">
                 {/* ... Header ... */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="space-y-1">

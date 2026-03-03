@@ -25,16 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
       <body
         suppressHydrationWarning
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          "min-h-screen bg-background font-sans antialiased overflow-x-hidden w-full relative max-w-[100vw]",
           outfit.variable
         )}
       >
         <AuthProvider>
-          <div className="relative min-h-screen flex flex-col">
+          <div className="relative min-h-screen flex flex-col overflow-x-hidden w-full">
             {/* Abstract Background Blobs - Keep existing */}
             <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none hidden md:block">
               <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-pulse" />
@@ -63,7 +63,7 @@ export default function RootLayout({
             <Navbar />
 
             {/* Main Content with top padding to avoid header overlap */}
-            <main className="flex-1 pb-32 pt-24 md:pt-28 px-4">
+            <main className="flex-1 pb-32 pt-24 md:pt-28 px-4 w-full flex flex-col items-center justify-start overflow-x-hidden">
               {children}
             </main>
             <NudgeSystem />
