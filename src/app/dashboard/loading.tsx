@@ -3,66 +3,29 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function Loading() {
     return (
-        <div className="min-h-screen p-4 md:p-8 space-y-8 bg-background">
-            <div className="max-w-6xl mx-auto space-y-8">
-                {/* Header Skeleton */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="space-y-2">
-                        <Skeleton className="h-12 w-64 rounded-lg" />
-                        <Skeleton className="h-6 w-48 rounded" />
-                    </div>
-                    <div className="flex gap-2">
-                        <Skeleton className="h-10 w-24 rounded-md" />
-                        <Skeleton className="h-10 w-24 rounded-md" />
-                        <Skeleton className="h-10 w-24 rounded-md" />
+        <div className="min-h-screen p-4 md:p-8 space-y-8 bg-background flex flex-col items-center justify-center">
+            <div className="relative flex flex-col items-center justify-center p-8 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden min-w-[300px]">
+                {/* Background glow */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-purple-500/10 to-transparent blur-2xl" />
+
+                {/* Spinner Rings */}
+                <div className="relative w-24 h-24 mb-6">
+                    <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+                    <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin" />
+                    <div className="absolute inset-2 border-4 border-rose-400 rounded-full border-b-transparent animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl animate-pulse">🧠</span>
                     </div>
                 </div>
 
-                {/* Dashboard Grid Skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Assessment Card Skeleton */}
-                    <Card className="md:col-span-3 lg:col-span-1">
-                        <CardHeader>
-                            <Skeleton className="h-6 w-40 rounded" />
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="space-y-1">
-                                    <div className="flex justify-between">
-                                        <Skeleton className="h-4 w-20 rounded" />
-                                        <Skeleton className="h-4 w-10 rounded" />
-                                    </div>
-                                    <Skeleton className="h-2 w-full rounded-full" />
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    {/* Chart Skeleton */}
-                    <Card className="md:col-span-3 lg:col-span-2">
-                        <CardHeader>
-                            <Skeleton className="h-6 w-48 rounded" />
-                        </CardHeader>
-                        <CardContent className="h-[300px] flex items-end justify-between gap-1 pb-4 px-4">
-                            {[...Array(10)].map((_, i) => (
-                                <Skeleton key={i} className="w-full rounded-t-md" style={{ height: `${Math.random() * 80 + 20}%` }} />
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    {/* Summary Skeleton */}
-                    <Card className="md:col-span-3 lg:col-span-1">
-                        <CardHeader>
-                            <Skeleton className="h-6 w-32 rounded" />
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Skeleton className="h-4 w-full rounded" />
-                            <Skeleton className="h-2 w-full rounded" />
-                            <Skeleton className="h-4 w-full rounded mt-4" />
-                            <Skeleton className="h-2 w-full rounded" />
-                        </CardContent>
-                    </Card>
-                </div>
+                {/* Text Context */}
+                <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-rose-400 bg-clip-text text-transparent mb-2">
+                    Loading Dashboard
+                </h3>
+                <p className="text-sm text-muted-foreground text-center animate-pulse">
+                    Waking up secure database... <br />
+                    <span className="text-xs opacity-70">(This might take ~2s on the first load)</span>
+                </p>
             </div>
         </div>
     );

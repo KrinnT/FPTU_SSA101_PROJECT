@@ -7,6 +7,7 @@ import { Bot, Send, User, PhoneCall, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
 import { ProfessionalHelpModal } from "@/components/features/professional-help-modal";
+import ReactMarkdown from "react-markdown";
 
 // --- SMART LOGIC ENGINE ---
 
@@ -392,14 +393,21 @@ function ChatContent() {
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <div className={cn(
-                                            "p-4 rounded-2xl shadow-sm text-sm leading-relaxed",
+                                            "p-4 rounded-2xl shadow-sm text-sm leading-relaxed overflow-hidden",
                                             msg.role === "user"
                                                 ? "bg-primary/20 text-foreground rounded-tr-none border border-primary/20"
                                                 : msg.type === "risk"
                                                     ? "bg-red-500/10 text-red-200 border border-red-500/50 rounded-tl-none"
                                                     : "bg-white/50 dark:bg-white/10 backdrop-blur-md rounded-tl-none border border-white/20"
                                         )}>
-                                            {msg.text}
+                                            <ReactMarkdown
+                                                className="prose dark:prose-invert prose-sm max-w-none break-words"
+                                                components={{
+                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                }}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
                                         </div>
                                         {msg.type === "risk" && (
                                             <div className="text-xs text-red-400 pl-2">
