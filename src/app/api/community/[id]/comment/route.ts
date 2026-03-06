@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag, revalidatePath } from 'next/cache';
 
 // POST: Add reply
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -23,8 +24,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             include: { author: { select: { name: true } } }
         });
 
+        // @ts-ignore
+        revalidateTag('community-posts');
+        revalidatePath('/community');
+
         return NextResponse.json(comment);
     } catch (error) {
+        console.error("Comment error", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

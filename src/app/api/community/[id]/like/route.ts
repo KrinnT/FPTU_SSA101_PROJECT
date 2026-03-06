@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag, revalidatePath } from 'next/cache';
 
 // POST: Like post
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,23 +27,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (existingLike) {
             // Unlike
             await prisma.postLike.delete({ where: { id: existingLike.id } });
-            const post = await prisma.post.update({
-                where: { id },
-                data: { likes: { decrement: 1 } }
-            });
-            return NextResponse.json({ likes: post.likes, liked: false });
         } else {
             // Like
             await prisma.postLike.create({
                 data: { userId, postId: id }
             });
-            const post = await prisma.post.update({
-                where: { id },
-                data: { likes: { increment: 1 } }
-            });
-            return NextResponse.json({ likes: post.likes, liked: true });
         }
+
+        // Count exact likes to avoid race conditions
+        const likesCount = await prisma.postLike.count({ where: { postId: id } });
+        await prisma.post.update({
+            where: { id },
+            data: { likes: likesCount }
+        });
+
+        // @ts-ignore
+        revalidateTag('community-posts');
+        revalidatePath('/community');
+
+        return NextResponse.json({ likes: likesCount, liked: !existingLike });
     } catch (error) {
+        console.error("Like error", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
