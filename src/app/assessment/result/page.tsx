@@ -79,7 +79,7 @@ function ResultContent() {
 
     if (!result) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="w-full flex-1 flex items-center justify-center">
                 <div className="animate-pulse">Loading analysis...</div>
             </div>
         );
@@ -98,7 +98,7 @@ function ResultContent() {
 
 
     return (
-        <div className="min-h-screen p-4 md:p-8 space-y-8 bg-background">
+        <div className="w-full flex-1 p-4 md:p-8 space-y-8">
             {/* Auto-trigger modal if high risk */}
             <ProfessionalHelpModal
                 open={showModal}

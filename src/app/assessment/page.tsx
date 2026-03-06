@@ -95,7 +95,7 @@ export default function AssessmentPage() {
 
     if (!hasStarted) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+            <div className="w-full flex-1 flex items-center justify-center p-4">
                 <Card className="max-w-md w-full glass-card text-center p-6 space-y-6 animate-in fade-in zoom-in duration-500">
                     <CardHeader>
                         <CardTitle className="text-3xl font-bold">Mental Health Check</CardTitle>
@@ -121,7 +121,7 @@ export default function AssessmentPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="w-full flex-1 flex items-center justify-center p-4">
             <div className="w-full max-w-2xl space-y-8">
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm font-medium text-muted-foreground">
