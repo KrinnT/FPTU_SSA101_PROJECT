@@ -400,14 +400,15 @@ function ChatContent() {
                                                     ? "bg-red-500/10 text-red-200 border border-red-500/50 rounded-tl-none"
                                                     : "bg-white/50 dark:bg-white/10 backdrop-blur-md rounded-tl-none border border-white/20"
                                         )}>
-                                            <ReactMarkdown
-                                                className="prose dark:prose-invert prose-sm max-w-none break-words"
-                                                components={{
-                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                                }}
-                                            >
-                                                {msg.text}
-                                            </ReactMarkdown>
+                                            <div className="prose dark:prose-invert prose-sm max-w-none break-words">
+                                                <ReactMarkdown
+                                                    components={{
+                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                    }}
+                                                >
+                                                    {msg.text}
+                                                </ReactMarkdown>
+                                            </div>
                                         </div>
                                         {msg.type === "risk" && (
                                             <div className="text-xs text-red-400 pl-2">
