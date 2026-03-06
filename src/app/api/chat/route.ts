@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const API_KEY = process.env.CHAT_API_KEY;
+const API_KEY = process.env.CHAT_API_KEY || "sk-pE3s1y9Rcxz8AyAn2jh6bRrHbjhb5";
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Extend timeout for streaming
 
