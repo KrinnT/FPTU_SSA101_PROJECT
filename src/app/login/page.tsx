@@ -29,6 +29,11 @@ function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
 
+    // Silent Database Wake-up
+    React.useEffect(() => {
+        fetch("/api/keepalive").catch(() => { });
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
