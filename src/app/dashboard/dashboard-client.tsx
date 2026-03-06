@@ -129,23 +129,23 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
                         </h1>
                         <p className="text-lg text-muted-foreground font-medium">Have a wonderful day ahead!</p>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href="/focus">
-                            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto mt-4 md:mt-0">
+                        <Link href="/focus" className="flex-1 min-w-[140px] md:flex-none">
+                            <Button className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
                                 <Play className="w-4 h-4" /> Focus Mode
                             </Button>
                         </Link>
-                        <Button variant="outline" onClick={handleExportPDF} className="gap-2 text-primary border-primary/20 hover:bg-primary/10">
-                            <Download className="w-4 h-4" /> Export Map (PDF)
+                        <Button variant="outline" onClick={handleExportPDF} className="flex-1 min-w-[140px] md:flex-none gap-2 text-primary border-primary/20 hover:bg-primary/10">
+                            <Download className="w-4 h-4" /> Export Map
                         </Button>
                         {!hasAssessment && (
-                            <Link href="/assessment">
-                                <Button variant="outline" className="gap-2">
-                                    <NotebookPen className="w-4 h-4" /> New Assessment
+                            <Link href="/assessment" className="flex-1 min-w-[140px] md:flex-none">
+                                <Button variant="outline" className="w-full gap-2">
+                                    <NotebookPen className="w-4 h-4 text-xs" /> New Assessment
                                 </Button>
                             </Link>
                         )}
-                        <Button onClick={() => setShowCheckIn(!showCheckIn)} className="gap-2 animate-bounce-subtle" variant="outline">
+                        <Button onClick={() => setShowCheckIn(!showCheckIn)} className="flex-1 min-w-[140px] md:flex-none gap-2 animate-bounce-subtle" variant="outline">
                             <Plus className="w-4 h-4" /> Check-in
                         </Button>
                     </div>
