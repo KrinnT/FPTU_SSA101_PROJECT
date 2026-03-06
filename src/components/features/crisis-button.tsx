@@ -5,9 +5,16 @@ import { Button } from "@/components/ui/button";
 import { ShieldAlert, Phone } from "lucide-react";
 import { ProfessionalHelpModal } from "@/components/features/professional-help-modal";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export function CrisisFloatingButton() {
     const [open, setOpen] = useState(false);
+    const { user } = useAuth();
+    const pathname = usePathname();
+
+    const isAuthPage = ['/login', '/register', '/verify'].includes(pathname || '');
+    if (!user || isAuthPage) return null;
 
     return (
         <>
@@ -20,11 +27,11 @@ export function CrisisFloatingButton() {
                 <Button
                     variant="destructive"
                     size="icon"
-                    className="h-14 w-14 rounded-full shadow-2xl border-4 border-white/20 animate-pulse hover:animate-none"
+                    className="h-10 w-10 md:h-14 md:w-14 rounded-full shadow-2xl border-2 md:border-4 border-white/20 animate-pulse hover:animate-none"
                     onClick={() => setOpen(true)}
                     title="Emergency Support / Crisis Help"
                 >
-                    <ShieldAlert className="w-8 h-8" />
+                    <ShieldAlert className="w-5 h-5 md:w-8 md:h-8" />
                 </Button>
             </motion.div>
 

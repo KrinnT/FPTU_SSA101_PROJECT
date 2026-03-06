@@ -157,7 +157,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
 
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl w-full mx-auto space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500">
                     Community Board

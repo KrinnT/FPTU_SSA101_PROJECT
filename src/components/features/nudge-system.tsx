@@ -5,6 +5,7 @@ import { X, Clock, Settings, Heart, Coffee, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { usePathname } from "next/navigation";
 
 const MESSAGES = [
     { text: "Bạn không cần hoàn hảo để tiến bộ.", type: "motivation", icon: <Heart className="w-5 h-5 text-rose-400" /> },
@@ -24,6 +25,7 @@ function WindIcon() {
 
 export function NudgeSystem() {
     const { user } = useAuth();
+    const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(false);
     const [message, setMessage] = useState(MESSAGES[0]);
     const [frequency, setFrequency] = useState(30); // minutes
@@ -31,7 +33,8 @@ export function NudgeSystem() {
     const [nextTime, setNextTime] = useState(Date.now() + 5000); // Start 5s after load for demo
 
     useEffect(() => {
-        if (!user) {
+        const isAuthPage = ['/login', '/register', '/verify'].includes(pathname || '');
+        if (!user || isAuthPage) {
             setIsVisible(false); // Hide immediately if logged out
             return;
         }
@@ -44,7 +47,7 @@ export function NudgeSystem() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [nextTime, isVisible, user]);
+    }, [nextTime, isVisible, user, pathname]);
 
     const triggerNudge = () => {
         const randomMsg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
@@ -75,19 +78,19 @@ export function NudgeSystem() {
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="fixed bottom-[100px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 z-50 md:w-96"
+                        className="fixed bottom-[100px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 z-50 md:w-96 max-w-[calc(100vw-32px)]"
                     >
-                        <div className="glass-card p-4 rounded-2xl shadow-2xl border-l-4 border-l-primary flex items-start gap-4 relative overflow-hidden backdrop-blur-xl bg-background/80">
+                        <div className="glass-card p-3 md:p-4 rounded-2xl shadow-2xl border-l-4 border-l-primary flex items-start gap-3 md:gap-4 relative overflow-hidden backdrop-blur-xl bg-background/80">
                             {/* Icon Blob */}
-                            <div className="p-3 bg-secondary/10 rounded-full shrink-0">
-                                {message.icon}
+                            <div className="p-2 md:p-3 bg-secondary/10 rounded-full shrink-0 flex items-center justify-center">
+                                <div className="scale-75 md:scale-100 flex">{message.icon}</div>
                             </div>
 
-                            <div className="flex-1 space-y-1">
-                                <h4 className="font-semibold text-sm text-primary uppercase tracking-wider">
+                            <div className="flex-1 space-y-0.5 md:space-y-1">
+                                <h4 className="font-semibold text-xs md:text-sm text-primary uppercase tracking-wider">
                                     Positive Reminder
                                 </h4>
-                                <p className="text-foreground/90 leading-relaxed">
+                                <p className="text-foreground/90 leading-relaxed text-xs md:text-sm">
                                     {message.text}
                                 </p>
                             </div>
