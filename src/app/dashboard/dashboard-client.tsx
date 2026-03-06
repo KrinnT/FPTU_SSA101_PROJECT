@@ -155,9 +155,11 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
                 {isHighRisk && (
                     <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-start gap-4 animate-pulse overflow-hidden">
                         <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 mt-1" />
-                        <div className="space-y-2 flex-1 min-w-0">
-                            <h3 className="font-bold text-rose-500 leading-tight">We noticed you've been feeling down lately.</h3>
-                            <p className="text-sm text-rose-200">
+                        <div className="space-y-3 flex-1 min-w-0 overflow-hidden">
+                            <h3 className="font-bold text-rose-500 leading-tight text-base sm:text-lg break-words hyphens-auto">
+                                We noticed you've been feeling down lately.
+                            </h3>
+                            <p className="text-sm text-rose-200 break-words w-full">
                                 Your well-being is our top priority. Consider reaching out to a counselor or using our support hotline.
                             </p>
                             <div className="pt-2 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4">
