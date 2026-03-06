@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 interface PostItemProps {
     post: any;
     currentUserId?: string;
-    onLike: (id: string) => void;
+    likedByUser?: boolean;
+    onLike: (id: string, currentlyLiked: boolean) => void;
     onDelete: (id: string) => void;
     onReply: (id: string) => void;
     isReplying: boolean;
@@ -21,6 +22,7 @@ interface PostItemProps {
 export const PostItem = memo(({
     post,
     currentUserId,
+    likedByUser = false,
     onLike,
     onDelete,
     onReply,
@@ -61,8 +63,8 @@ export const PostItem = memo(({
             <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
                 <div className="flex justify-between w-full text-sm text-muted-foreground">
                     <div className="flex gap-4">
-                        <button onClick={() => onLike(post.id)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
-                            <Heart className={cn("w-4 h-4", post.likes > 0 && "fill-rose-500 text-rose-500")} /> {post.likes}
+                        <button onClick={() => onLike(post.id, likedByUser)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
+                            <Heart className={cn("w-4 h-4", likedByUser && "fill-rose-500 text-rose-500")} /> {post.likes}
                         </button>
                         <button onClick={() => onReply(post.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
                             <MessageSquare className="w-4 h-4" /> {post.comments?.length || 0} Replies

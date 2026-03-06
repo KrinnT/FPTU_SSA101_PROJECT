@@ -12,17 +12,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
 
         const { id } = await params;
+        const userId = session.user.id;
 
-        // Simplified interaction: Just increment likes
-        // In a real app we'd track WHO liked it to prevent duplicates
-        // But schema request was simple "likes Int".
-
-        const post = await prisma.post.update({
-            where: { id },
-            data: { likes: { increment: 1 } }
+        const existingLike = await prisma.postLike.findUnique({
+            where: {
+                userId_postId: {
+                    userId,
+                    postId: id
+                }
+            }
         });
 
-        return NextResponse.json({ likes: post.likes });
+        if (existingLike) {
+            // Unlike
+            await prisma.postLike.delete({ where: { id: existingLike.id } });
+            const post = await prisma.post.update({
+                where: { id },
+                data: { likes: { decrement: 1 } }
+            });
+            return NextResponse.json({ likes: post.likes, liked: false });
+        } else {
+            // Like
+            await prisma.postLike.create({
+                data: { userId, postId: id }
+            });
+            const post = await prisma.post.update({
+                where: { id },
+                data: { likes: { increment: 1 } }
+            });
+            return NextResponse.json({ likes: post.likes, liked: true });
+        }
     } catch (error) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }

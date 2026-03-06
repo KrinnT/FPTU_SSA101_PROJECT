@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { CommunityFeed } from "@/components/features/community/community-feed";
+import { getSession } from "@/lib/session";
 
 export async function CommunityPosts() {
-    // Artificial delay to demonstrate streaming (optional, remove in prod if not needed, but good for testing)
-    // await new Promise(resolve => setTimeout(resolve, 1000));
+    const session = await getSession();
+    const userId = session?.user?.id;
 
     const initialPosts = await prisma.post.findMany({
         take: 10,
@@ -16,20 +17,22 @@ export async function CommunityPosts() {
                     author: { select: { name: true } }
                 },
                 orderBy: { createdAt: 'asc' }
-            }
+            },
+            ...(userId ? { postLikes: { where: { userId } } } : {})
         },
         orderBy: { createdAt: 'desc' }
     });
 
     // Serialize dates for Client Component
-    const serializedPosts = initialPosts.map(post => ({
+    const serializedPosts = initialPosts.map((post: any) => ({
         ...post,
+        likedByUser: !!(post.postLikes && post.postLikes.length > 0),
         createdAt: post.createdAt.toISOString(),
         author: {
             ...post.author,
             name: post.author.name || "Anonymous"
         },
-        comments: post.comments.map(c => ({
+        comments: post.comments.map((c: any) => ({
             ...c,
             createdAt: c.createdAt.toISOString(),
             author: {

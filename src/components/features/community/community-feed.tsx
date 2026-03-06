@@ -112,11 +112,24 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
         }
     };
 
-    const handleLike = async (id: string) => {
+    const handleLike = async (id: string, currentlyLiked: boolean) => {
         try {
-            await fetch(`/api/community/${id}/like`, { method: "POST" });
-            setPosts(posts.map(p => p.id === id ? { ...p, likes: p.likes + 1 } : p));
-        } catch (e) { }
+            // Optimistic update
+            setPosts(posts.map(p => p.id === id ? {
+                ...p,
+                likes: currentlyLiked ? p.likes - 1 : p.likes + 1,
+                likedByUser: !currentlyLiked
+            } : p));
+
+            const res = await fetch(`/api/community/${id}/like`, { method: "POST" });
+            if (res.ok) {
+                const data = await res.json();
+                // Sync with server truth
+                setPosts(currentPosts => currentPosts.map(p =>
+                    p.id === id ? { ...p, likes: data.likes, likedByUser: data.liked } : p
+                ));
+            }
+        } catch (e) { console.error(e); }
     };
 
     const handleDelete = async (id: string) => {
@@ -219,11 +232,12 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                         No posts in this category yet. Be the first!
                     </div>
                 )}
-                {posts.map((post) => (
+                {posts.map((post: any) => (
                     <PostItem
                         key={post.id}
                         post={post}
                         currentUserId={user?.id}
+                        likedByUser={post.likedByUser}
                         onLike={handleLike}
                         onDelete={handleDelete}
                         onReply={(id) => setReplyingTo(replyingTo === id ? null : id)}

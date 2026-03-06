@@ -28,6 +28,7 @@ model User {
   tasks       Task[]
   posts       Post[]
   comments    Comment[]
+  postLikes   PostLike[]
 }
 
 
@@ -156,6 +157,7 @@ model Post {
   likes     Int          @default(0)
   createdAt DateTime     @default(now())
   comments  Comment[]
+  postLikes PostLike[]
 
   @@index([createdAt])
   @@index([authorId])
@@ -172,6 +174,18 @@ model Comment {
   content   String   @db.Text
   createdAt DateTime @default(now())
 
+  @@index([postId])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
   @@index([postId])
 }
 
