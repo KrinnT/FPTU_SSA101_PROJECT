@@ -15,7 +15,7 @@ export function CrisisFloatingButton() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 1 }}
-                className="fixed bottom-6 left-6 z-50"
+                className="fixed bottom-24 md:bottom-6 left-4 md:left-6 z-50 pointer-events-auto"
             >
                 <Button
                     variant="destructive"

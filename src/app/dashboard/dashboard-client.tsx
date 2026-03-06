@@ -153,19 +153,19 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
 
                 {/* Risk Alert Banner */}
                 {isHighRisk && (
-                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-start gap-4 animate-pulse">
-                        <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0" />
-                        <div className="space-y-1">
-                            <h3 className="font-bold text-rose-500">We noticed you've been feeling down lately.</h3>
+                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-start gap-4 animate-pulse overflow-hidden">
+                        <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 mt-1" />
+                        <div className="space-y-2 flex-1 min-w-0">
+                            <h3 className="font-bold text-rose-500 leading-tight">We noticed you've been feeling down lately.</h3>
                             <p className="text-sm text-rose-200">
                                 Your well-being is our top priority. Consider reaching out to a counselor or using our support hotline.
                             </p>
-                            <div className="pt-2 flex gap-4">
-                                <Button size="sm" variant="destructive" className="gap-2">
+                            <div className="pt-2 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4">
+                                <Button size="sm" variant="destructive" className="gap-2 w-full sm:w-auto">
                                     <PhoneCall className="w-4 h-4" /> Call Hotline (111)
                                 </Button>
-                                <Link href="/exercises">
-                                    <Button size="sm" variant="outline" className="text-rose-200 border-rose-500/30 hover:bg-rose-500/20">
+                                <Link href="/exercises" className="w-full sm:w-auto">
+                                    <Button size="sm" variant="outline" className="w-full text-rose-200 border-rose-500/30 hover:bg-rose-500/20">
                                         Try Relaxation Exercises
                                     </Button>
                                 </Link>
