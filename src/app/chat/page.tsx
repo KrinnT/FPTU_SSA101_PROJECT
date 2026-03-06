@@ -204,6 +204,7 @@ function ChatContent() {
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [helpReason, setHelpReason] = useState<"score" | "chat" | "manual">("manual");
     const [chatState, setChatState] = useState<ChatState>(INITIAL_STATE);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
     // Load history from DB on mount
     useEffect(() => {
@@ -223,6 +224,8 @@ function ChatContent() {
                 }
             } catch (error) {
                 console.error("Failed to load chat history:", error);
+            } finally {
+                setIsLoadingHistory(false);
             }
         };
 
@@ -328,6 +331,14 @@ function ChatContent() {
         // TODO: Ideally call an API to delete the chat conversation from DB if desired
         // For now, this just resets the view.
     };
+
+    if (isLoadingHistory) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background w-full">
+                <p className="text-muted-foreground animate-pulse">Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen p-4 md:p-8 bg-background flex items-center justify-center">

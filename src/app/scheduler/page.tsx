@@ -46,6 +46,7 @@ function SchedulerContent() {
     const [newEvent, setNewEvent] = useState({ name: "", day: "Monday", startTime: "08:00", endTime: "10:00" });
     const [everydayTask, setEverydayTask] = useState({ name: "", duration: 1 });
     const [normalTask, setNormalTask] = useState({ name: "", duration: 1 });
+    const [isLoading, setIsLoading] = useState(true);
 
     // Load from DB
     useEffect(() => {
@@ -73,6 +74,8 @@ function SchedulerContent() {
                 }
             } catch (error) {
                 console.error("Failed to load scheduler data");
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchData();
@@ -302,6 +305,14 @@ function SchedulerContent() {
             });
         } catch (e) { console.error("Batch update failed", e); }
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background w-full">
+                <p className="text-muted-foreground animate-pulse">Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen p-4 md:p-8 bg-background flex flex-col items-center">

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Sparkles } from "lucide-react";
 import { FlashcardListServer } from "@/components/features/flashcards/flashcard-list-server";
-import { FlashcardSkeleton } from "@/components/features/flashcards/flashcard-skeleton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +21,11 @@ export default function FlashcardsPage() {
             </div>
 
             {/* Streaming Section */}
-            <Suspense fallback={<FlashcardSkeleton />}>
+            <Suspense fallback={
+                <div className="flex h-40 items-center justify-center">
+                    <p className="text-muted-foreground animate-pulse">Loading...</p>
+                </div>
+            }>
                 <FlashcardListServer />
             </Suspense>
         </div>
