@@ -60,6 +60,7 @@ function SchedulerContent() {
     // Form Inputs
     const [newEvent, setNewEvent] = useState({ name: "", day: "Monday", startTime: "08:00", endTime: "10:00" });
     const [everydayTask, setEverydayTask] = useState({ name: "", duration: 1 });
+    const [includeWeekends, setIncludeWeekends] = useState(true);
     const [normalTask, setNormalTask] = useState({ name: "", duration: 1 });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -187,7 +188,11 @@ function SchedulerContent() {
         const globalStartFloat = timeToFloat(allowedStartTime);
         const globalEndFloat = timeToFloat(allowedEndTime);
 
-        DAYS.forEach(day => {
+        const daysToSchedule = includeWeekends
+            ? DAYS
+            : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+        daysToSchedule.forEach(day => {
             // Find slot
             let assignedSlot = undefined;
             // Step 15 mins
@@ -450,6 +455,44 @@ function SchedulerContent() {
         }
     };
 
+    const onSelectEvent = (event: any) => {
+        if (window.confirm(`Are you sure you want to delete '${event.title}'?`)) {
+            if (event.isFixed) {
+                removeFixed(event.resourceId);
+            } else {
+                // removeTask expects a full Task object but we have the event
+                // Find the original task by taskId
+                const taskToDelete = tasks.find(t => t.id === event.taskId);
+                if (taskToDelete) {
+                    removeTask(taskToDelete);
+                }
+            }
+        }
+    };
+
+    // Calculate grouped tasks to avoid showing 7 tasks
+    const everydayTaskGroups = Array.from(
+        tasks.reduce((acc, task) => {
+            if (task.groupId && task.groupId !== "") {
+                if (!acc.has(task.groupId)) {
+                    acc.set(task.groupId, {
+                        ...task,
+                        daysCount: 1 // Track how many days this task appears
+                    });
+                } else {
+                    const existing = acc.get(task.groupId);
+                    existing.daysCount += 1;
+                }
+            }
+            return acc;
+        }, new Map()).values()
+    );
+
+    // Normal tasks are tasks that don't have a 7-day pattern (for this UI simplified assumption, 
+    // we'll just say any task without a groupId or single is normal, but actually everyday tasks always get a groupId)
+    const normalTasks = tasks.filter(t => !t.groupId || t.groupId === "");
+    const groupedEverydayTasks = everydayTaskGroups.filter((g: any) => g.daysCount === 7 || g.id.startsWith("temp-"));
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background w-full">
@@ -587,6 +630,18 @@ function SchedulerContent() {
                                         ))}
                                     </div>
                                 </div>
+                                <div className="flex items-center space-x-2 py-2">
+                                    <input
+                                        type="checkbox"
+                                        id="weekends"
+                                        checked={includeWeekends}
+                                        onChange={(e) => setIncludeWeekends(e.target.checked)}
+                                        className="rounded border-input bg-background w-4 h-4 text-primary focus:ring-primary"
+                                    />
+                                    <Label htmlFor="weekends" className="text-sm font-normal cursor-pointer text-muted-foreground">
+                                        Include Weekends (Sat-Sun)
+                                    </Label>
+                                </div>
                                 <Button className="w-full" variant="secondary" onClick={addEverydayTask} disabled={!everydayTask.name}>
                                     <Plus className="w-4 h-4 mr-2" /> Add Everyday Task
                                 </Button>
@@ -631,9 +686,32 @@ function SchedulerContent() {
                                     <Plus className="w-4 h-4 mr-2" /> Add Task
                                 </Button>
 
-                                {/* Task List */}
-                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2">
-                                    {tasks.map(t => (
+                                {/* EVERYDAY TASKS LIST (GROUPED) */}
+                                {groupedEverydayTasks.length > 0 && (
+                                    <div className="space-y-2 mb-4">
+                                        <Label className="flex items-center gap-2 mb-2 font-semibold text-primary">
+                                            Added Everyday Tasks
+                                        </Label>
+                                        {groupedEverydayTasks.map((groupTask: any) => (
+                                            <div key={groupTask.groupId} className="flex justify-between items-center text-sm p-2 bg-primary/10 rounded-md border border-primary/20">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center">
+                                                        <span className="font-semibold text-primary">{groupTask.name}</span>
+                                                        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{groupTask.duration}h/day</span>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => removeTask(groupTask)} className="text-muted-foreground hover:text-red-500">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Normal Task List */}
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 border-t border-border pt-3">
+                                    <Label className="text-xs text-muted-foreground mb-2 block">Individual Tasks</Label>
+                                    {normalTasks.map(t => (
                                         <div key={t.id} className={cn(
                                             "flex justify-between items-center text-sm p-2 rounded-md border",
                                             t.assignedSlot
@@ -685,19 +763,21 @@ function SchedulerContent() {
                                     </div>
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-x-auto pb-6">
-                                <div className="h-[700px] min-w-[700px] rounded-md overflow-hidden bg-background">
+                            <CardContent className="flex-1 overflow-visible p-0 md:p-6 pb-6">
+                                <div className="h-[900px] w-full min-w-[600px] rounded-md overflow-hidden bg-background">
                                     <style>{`
                                         /* Customizing Big Calendar for Dark Mode */
                                         .rbc-calendar {
                                             font-family: inherit;
                                             color: var(--foreground);
                                             border-color: rgba(255,255,255,0.05);
+                                            min-height: 900px;
                                         }
                                         .rbc-time-view {
                                             border-color: rgba(255,255,255,0.05);
                                             border-radius: 0.5rem;
                                             overflow: hidden;
+                                            flex: 1;
                                         }
                                         .rbc-time-header-content {
                                             border-left-color: rgba(255,255,255,0.05);
@@ -714,14 +794,14 @@ function SchedulerContent() {
                                             border-left-color: rgba(255,255,255,0.05);
                                         }
                                         .rbc-day-bg {
-                                            border-left-color: rgba(255,255,255,0.05);
+                                            border-left-color: rgba(255,255,255,0.02);
                                         }
                                         .rbc-time-slot {
-                                            border-top: 1px dashed rgba(255,255,255,0.05);
+                                            border-top: 1px dashed rgba(255,255,255,0.02);
                                         }
                                         .rbc-timeslot-group {
-                                            border-bottom-color: rgba(255,255,255,0.05);
-                                            min-height: 40px;
+                                            border-bottom-color: rgba(255,255,255,0.02);
+                                            min-height: 50px; /* INCREASED FROM 40px to prevent squishing */
                                         }
                                         .rbc-event {
                                             border: none;
@@ -743,10 +823,10 @@ function SchedulerContent() {
                                             border-top: none;
                                         }
                                         .rbc-time-content > * + * > * {
-                                            border-left-color: rgba(255,255,255,0.05);
+                                            border-left-color: rgba(255,255,255,0.02);
                                         }
                                         .rbc-time-gutter .rbc-timeslot-group {
-                                            border-right-color: rgba(255,255,255,0.05);
+                                            border-right-color: rgba(255,255,255,0.02);
                                             border-bottom-color: transparent;
                                         }
                                         .rbc-label {
@@ -756,7 +836,7 @@ function SchedulerContent() {
                                         }
                                         .rbc-toolbar button {
                                             color: var(--foreground);
-                                            border-color: rgba(255,255,255,0.1);
+                                            border-color: rgba(255,255,255,0.05);
                                         }
                                         .rbc-toolbar button:active,
                                         .rbc-toolbar button.rbc-active {
@@ -781,6 +861,7 @@ function SchedulerContent() {
                                         onEventResize={() => { }} // Could be implemented later
                                         resizable={false}
                                         draggableAccessor={(event: any) => !event.isFixed}
+                                        onSelectEvent={onSelectEvent}
                                         eventPropGetter={(event: any) => ({
                                             style: {
                                                 backgroundColor: event.isFixed ? '#f43f5e' : '#3b82f6', // rose-500 / blue-500

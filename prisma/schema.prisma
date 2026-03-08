@@ -29,6 +29,8 @@ model User {
   posts       Post[]
   comments    Comment[]
   postLikes   PostLike[]
+  
+  uploadedMaterials Material[]
 }
 
 
@@ -191,3 +193,63 @@ model PostLike {
   @@index([postId])
 }
 
+// --- Exam Material System ---
+model Semester {
+  id        String   @id @default(cuid())
+  name      String   // E.g., "Kỳ 0", "Kỳ 1"
+  materials Material[]
+  subjects  Subject[]
+  createdAt DateTime @default(now())
+
+  @@unique([name])
+}
+
+model Subject {
+  id         String   @id @default(cuid())
+  code       String   // E.g., "COV111"
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  materials  Material[]
+  createdAt  DateTime @default(now())
+
+  @@unique([code])
+  @@index([semesterId])
+}
+
+model Material {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?  @db.Text
+  fileUrl         String   // Local path or cloud URL
+  size            Int      // in bytes
+  type            String   // Extension or MIME type
+  totalDownloads  Int      @default(0)
+  status          String   @default("APPROVED") // PENDING, APPROVED, REJECTED
+  
+  semesterId      String
+  semester        Semester @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  
+  subjectId       String
+  subject         Subject  @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  
+  uploadedById    String
+  uploadedBy      User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  
+  reports         MaterialReport[]
+
+  createdAt       DateTime @default(now())
+
+  @@index([semesterId])
+  @@index([subjectId])
+  @@index([uploadedById])
+}
+
+model MaterialReport {
+  id          String   @id @default(cuid())
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  reason      String   @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([materialId])
+}
