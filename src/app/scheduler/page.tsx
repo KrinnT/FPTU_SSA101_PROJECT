@@ -9,6 +9,16 @@ import { Calendar, Clock, Plus, Trash2, ArrowRight, Save, RotateCcw } from "luci
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
 
+// Calendar Imports
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+
+const localizer = momentLocalizer(moment);
+const DnDCalendar = withDragAndDrop(BigCalendar);
+
 // Types
 interface FixedEvent {
     id: string;
@@ -42,6 +52,10 @@ function SchedulerContent() {
     const [fixedEvents, setFixedEvents] = useState<FixedEvent[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [generated, setGenerated] = useState(false);
+
+    // Config values
+    const [allowedStartTime, setAllowedStartTime] = useState("08:00");
+    const [allowedEndTime, setAllowedEndTime] = useState("22:00");
 
     // Form Inputs
     const [newEvent, setNewEvent] = useState({ name: "", day: "Monday", startTime: "08:00", endTime: "10:00" });
@@ -143,10 +157,13 @@ function SchedulerContent() {
     };
 
     const findFirstAvailableSlot = (duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
+        const globalStartFloat = timeToFloat(allowedStartTime);
+        const globalEndFloat = timeToFloat(allowedEndTime);
+
         for (const day of DAYS) {
             // Step by 15 mins (0.25)
-            for (let hour = 0; hour <= 23.75; hour += 0.25) {
-                if (hour + duration > 24) continue;
+            for (let hour = globalStartFloat; hour <= globalEndFloat - 0.25; hour += 0.25) {
+                if (hour + duration > globalEndFloat) continue;
 
                 if (!checkCollision(day, hour, duration, currentFixed, currentTasks, ignoreTaskId)) {
                     return {
@@ -162,25 +179,20 @@ function SchedulerContent() {
     const addEverydayTask = async () => {
         if (!everydayTask.name) return;
 
-        // Note: For "Everyday Task", we create 7 separate tasks on the backend? 
-        // Or one task repeated? The current logic creates 7 tasks. 
-        // We need to call the API 7 times or create a batch API.
-        // For simplicity, let's just loop and call create 7 times (parallel).
-
-        // However, the original logic calculates slots immediately. 
-        // We should replicate that: Calculate slots, then create tasks with those slots.
-
         const newTasksParams: any[] = [];
         let currentFixed = fixedEvents;
         let localTasksClone = [...tasks];
         const groupId = crypto.randomUUID(); // Unique group ID for this everyday task set
+        const optimisticTasks: Task[] = []; // To store temporary tasks for optimistic UI
+        const globalStartFloat = timeToFloat(allowedStartTime);
+        const globalEndFloat = timeToFloat(allowedEndTime);
 
         DAYS.forEach(day => {
             // Find slot
             let assignedSlot = undefined;
             // Step 15 mins
-            for (let hour = 0; hour <= 23.75; hour += 0.25) {
-                if (hour + everydayTask.duration > 24) continue;
+            for (let hour = globalStartFloat; hour <= globalEndFloat - 0.25; hour += 0.25) {
+                if (hour + everydayTask.duration > globalEndFloat) continue;
                 if (!checkCollision(day, hour, everydayTask.duration, currentFixed, localTasksClone)) {
                     assignedSlot = { day, startTime: floatToTime(hour) };
                     break;
@@ -188,17 +200,18 @@ function SchedulerContent() {
             }
 
             if (assignedSlot) {
-                // We will create this task with the slot pre-filled
-                // But wait, 'localTasksClone' needs it to prevent collision for next day? 
-                // Actually days are independent, so no collision between these 7 tasks.
-                // But we update 'localTasksClone' in case we add more things.
-                const tempTask = {
-                    id: "temp",
+                const tempId = `temp-${groupId}-${day}`;
+                const tempTask: Task = {
+                    id: tempId,
                     name: everydayTask.name,
                     duration: everydayTask.duration,
-                    assignedSlot
+                    assignedSlot,
+                    groupId
                 };
+
+                // Add to both local clone (for collision detection of remaining days) and optimistic array
                 localTasksClone.push(tempTask);
+                optimisticTasks.push(tempTask);
 
                 newTasksParams.push({
                     name: everydayTask.name,
@@ -210,26 +223,52 @@ function SchedulerContent() {
             }
         });
 
-        // Parallel Create
-        await Promise.all(newTasksParams.map(async p => {
-            const res = await fetch("/api/scheduler/tasks", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(p)
-            });
-            if (res.ok) {
-                const t = await res.json();
-                // Hydrate and add to state
-                const hydrated = {
-                    id: t.id, name: t.name, duration: t.duration, groupId: t.groupId,
-                    assignedSlot: (t.scheduledDay && t.scheduledStartTime) ? { day: t.scheduledDay, startTime: t.scheduledStartTime } : undefined
-                };
-                setTasks(prev => [...prev, hydrated]);
-            }
-        }));
-
+        // 1. Optimistic UI Update: Show immediately
+        setTasks(prev => [...prev, ...optimisticTasks]);
         setEverydayTask({ ...everydayTask, name: "" });
-        setGenerated(true); // Since we auto-scheduled them
+        setGenerated(true);
+
+        // 2. Background API Call: Batch create
+        if (newTasksParams.length > 0) {
+            try {
+                const res = await fetch("/api/scheduler/tasks/batch-create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tasks: newTasksParams })
+                });
+
+                if (res.ok) {
+                    const createdTasks = await res.json();
+
+                    // Format the response back to client schema
+                    const hydratedTasks = createdTasks.map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        duration: t.duration,
+                        groupId: t.groupId,
+                        assignedSlot: (t.scheduledDay && t.scheduledStartTime)
+                            ? { day: t.scheduledDay, startTime: t.scheduledStartTime }
+                            : undefined
+                    }));
+
+                    // 3. Replace optimistic temp tasks with the real DB records
+                    setTasks(prev => {
+                        // Remove the optimistic tasks for this group
+                        const filtered = prev.filter(t => t.groupId !== groupId || !t.id.startsWith("temp-"));
+                        // Add real tasks
+                        return [...filtered, ...hydratedTasks];
+                    });
+                } else {
+                    // Revert on failure
+                    console.error("Failed to create everyday tasks");
+                    setTasks(prev => prev.filter(t => t.groupId !== groupId));
+                }
+            } catch (err) {
+                console.error("Network error creating everyday tasks", err);
+                // Revert on failure
+                setTasks(prev => prev.filter(t => t.groupId !== groupId));
+            }
+        }
     };
 
     const addNormalTask = async () => {
@@ -314,6 +353,101 @@ function SchedulerContent() {
                 })
             });
         } catch (e) { console.error("Batch update failed", e); }
+    };
+
+    // --- CALENDAR EVENTS FORMATTING ---
+    // Helper to find date for a specific day of the week in current week
+    const getNextDateForDay = (dayName: string) => {
+        const today = new Date();
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const targetDayIndex = days.indexOf(dayName);
+        const currentDayIndex = today.getDay();
+
+        // Always place them in the current week starting Sunday
+        const diff = targetDayIndex - currentDayIndex;
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + diff);
+        return targetDate;
+    };
+
+    const calendarEvents = [
+        ...fixedEvents.map(fe => {
+            const date = getNextDateForDay(fe.day);
+            const [sH, sM] = fe.startTime.split(':').map(Number);
+            const [eH, eM] = fe.endTime.split(':').map(Number);
+
+            const start = new Date(date);
+            start.setHours(sH, sM, 0, 0);
+
+            const end = new Date(date);
+            end.setHours(eH, eM, 0, 0);
+
+            return {
+                id: fe.id,
+                title: fe.name,
+                start,
+                end,
+                isFixed: true,
+                resourceId: fe.id
+            };
+        }),
+        ...tasks.filter(t => t.assignedSlot).map(t => {
+            const slot = t.assignedSlot!;
+            const date = getNextDateForDay(slot.day);
+
+            const startFloat = timeToFloat(slot.startTime);
+            const sH = Math.floor(startFloat);
+            const sM = Math.round((startFloat - sH) * 60);
+
+            const endFloat = startFloat + t.duration;
+            const eH = Math.floor(endFloat);
+            const eM = Math.round((endFloat - eH) * 60);
+
+            const start = new Date(date);
+            start.setHours(sH, sM, 0, 0);
+
+            const end = new Date(date);
+            end.setHours(eH, eM, 0, 0);
+
+            return {
+                id: t.id,
+                title: t.name,
+                start,
+                end,
+                isFixed: false,
+                resourceId: t.id,
+                taskId: t.id
+            };
+        })
+    ];
+
+    const onEventDrop = async ({ event, start, end }: any) => {
+        if (event.isFixed) return; // Cannot move fixed events via UI simply
+
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const newDay = days[start.getDay()];
+        const newStartTime = floatToTime(start.getHours() + (start.getMinutes() / 60));
+
+        // Optimistic Update
+        setTasks(prev => prev.map(t => {
+            if (t.id === event.taskId) {
+                return { ...t, assignedSlot: { day: newDay, startTime: newStartTime } };
+            }
+            return t;
+        }));
+
+        try {
+            await fetch(`/api/scheduler/tasks/${event.taskId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    scheduledDay: newDay,
+                    scheduledStartTime: newStartTime
+                })
+            });
+        } catch (e) {
+            console.error("Failed to move event", e);
+        }
     };
 
     if (isLoading) {
@@ -530,109 +664,133 @@ function SchedulerContent() {
                             <CardHeader className="pb-4">
                                 <CardTitle>Weekly Timetable</CardTitle>
                                 <CardDescription>
-                                    {generated ? "Here is your optimized schedule." : "Add events and click Generate to see the plan."}
+                                    {generated ? "Here is your optimized schedule. You can drag and drop items to adjust." : "Add events and click Generate to see the plan."}
+                                    <div className="flex items-center gap-4 mt-4 bg-secondary/20 p-2 rounded-md border text-sm">
+                                        <div className="font-semibold text-primary">Auto-Schedule Allowed Hours:</div>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="time"
+                                                value={allowedStartTime}
+                                                onChange={e => setAllowedStartTime(e.target.value)}
+                                                className="h-8 w-24 px-2"
+                                            />
+                                            <span>to</span>
+                                            <Input
+                                                type="time"
+                                                value={allowedEndTime}
+                                                onChange={e => setAllowedEndTime(e.target.value)}
+                                                className="h-8 w-24 px-2"
+                                            />
+                                        </div>
+                                    </div>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1 overflow-x-auto pb-6">
-                                <div className="min-w-[700px]">
-                                    {/* Header Row */}
-                                    <div className="grid grid-cols-8 gap-1 mb-2">
-                                        <div className="text-center text-xs font-bold text-muted-foreground pt-2">TIME</div>
-                                        {DAYS.map(d => (
-                                            <div key={d} className="text-center text-xs font-bold uppercase tracking-wider p-2 bg-secondary/20 rounded-md text-foreground">
-                                                {d.slice(0, 3)}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Grid */}
-                                    <div className="space-y-1">
-                                        {TIMES.map(hour => (
-                                            <div key={hour} className="grid grid-cols-8 gap-1 h-14 relative group/row">
-                                                {/* Time Label */}
-                                                <div className="text-xs text-muted-foreground text-right pr-2 pt-1 border-t border-dashed border-white/10 group-first/row:border-t-0">
-                                                    {hour}:00
-                                                </div>
-
-                                                {/* Day Columns */}
-                                                {DAYS.map(day => {
-                                                    // Find items STARTING in this hour (e.g. 9:00, 9:15, 9:45)
-                                                    const fixedItems = fixedEvents.filter(e =>
-                                                        e.day === day &&
-                                                        parseInt(e.startTime.split(":")[0]) === hour
-                                                    );
-
-                                                    const taskItems = tasks.filter(t =>
-                                                        t.assignedSlot?.day === day &&
-                                                        parseInt(t.assignedSlot.startTime.split(":")[0]) === hour
-                                                    );
-
-                                                    return (
-                                                        <div key={`${day}-${hour}`} className="relative h-full border-t border-dashed border-white/5">
-                                                            {/* Render Fixed Events */}
-                                                            {fixedItems.map(fixedItem => {
-                                                                const startFloat = timeToFloat(fixedItem.startTime);
-                                                                const endFloat = timeToFloat(fixedItem.endTime);
-                                                                const topOffset = (startFloat - hour) * 3.5; // rem
-
-                                                                // Calculate height with gap compensation
-                                                                // Each hour crossed adds 0.25rem (gap-1)
-                                                                const crossedGaps = Math.floor(endFloat - 0.001) - Math.floor(startFloat);
-                                                                const height = (endFloat - startFloat) * 3.5 + (crossedGaps * 0.25);
-
-                                                                return (
-                                                                    <div
-                                                                        key={fixedItem.id}
-                                                                        className="absolute z-20 w-full rounded-md bg-rose-500/80 p-1 text-[10px] leading-tight text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-rose-400"
-                                                                        style={{
-                                                                            top: `${topOffset}rem`,
-                                                                            height: `${height}rem`,
-                                                                            left: 0,
-                                                                            right: 0
-                                                                        }}
-                                                                    >
-                                                                        <strong>{fixedItem.name}</strong>
-                                                                        <br />
-                                                                        {fixedItem.startTime}-{fixedItem.endTime}
-                                                                    </div>
-                                                                );
-                                                            })}
-
-                                                            {/* Render Tasks */}
-                                                            {taskItems.map(taskItem => {
-                                                                if (!taskItem.assignedSlot) return null;
-                                                                const startFloat = timeToFloat(taskItem.assignedSlot.startTime);
-                                                                const endFloat = startFloat + taskItem.duration;
-                                                                const topOffset = (startFloat - hour) * 3.5; // rem
-
-                                                                // Calculate height with gap compensation
-                                                                const crossedGaps = Math.floor(endFloat - 0.001) - Math.floor(startFloat);
-                                                                const height = taskItem.duration * 3.5 + (crossedGaps * 0.25);
-
-                                                                return (
-                                                                    <div
-                                                                        key={taskItem.id}
-                                                                        className="absolute z-10 w-full rounded-md bg-blue-500/70 p-1 text-[10px] text-white shadow-sm overflow-hidden hover:opacity-90 transition-opacity border border-blue-400"
-                                                                        style={{
-                                                                            top: `${topOffset}rem`,
-                                                                            height: `${height}rem`,
-                                                                            left: 0,
-                                                                            right: 0
-                                                                        }}
-                                                                    >
-                                                                        <div className="font-semibold">{taskItem.name}</div>
-                                                                        <div className="opacity-80 text-[9px] flex items-center gap-1">
-                                                                            <Clock className="w-2 h-2" /> {floatToTime(startFloat)}-{floatToTime(endFloat)}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="h-[700px] min-w-[700px] rounded-md overflow-hidden bg-background">
+                                    <style>{`
+                                        /* Customizing Big Calendar for Dark Mode */
+                                        .rbc-calendar {
+                                            font-family: inherit;
+                                            color: var(--foreground);
+                                            border-color: rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-time-view {
+                                            border-color: rgba(255,255,255,0.05);
+                                            border-radius: 0.5rem;
+                                            overflow: hidden;
+                                        }
+                                        .rbc-time-header-content {
+                                            border-left-color: rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-header {
+                                            border-bottom-color: rgba(255,255,255,0.05);
+                                            padding: 10px 0;
+                                            font-weight: 600;
+                                            font-size: 0.8rem;
+                                            text-transform: uppercase;
+                                            letter-spacing: 0.05em;
+                                        }
+                                        .rbc-header + .rbc-header {
+                                            border-left-color: rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-day-bg {
+                                            border-left-color: rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-time-slot {
+                                            border-top: 1px dashed rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-timeslot-group {
+                                            border-bottom-color: rgba(255,255,255,0.05);
+                                            min-height: 40px;
+                                        }
+                                        .rbc-event {
+                                            border: none;
+                                            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+                                            padding: 2px 5px;
+                                        }
+                                        .rbc-today {
+                                            background-color: rgba(255,255,255,0.03);
+                                        }
+                                        .rbc-event-content {
+                                            font-size: 0.75rem;
+                                            font-weight: 500;
+                                        }
+                                        .rbc-current-time-indicator {
+                                            background-color: hsl(var(--primary));
+                                            height: 2px;
+                                        }
+                                        .rbc-time-content {
+                                            border-top: none;
+                                        }
+                                        .rbc-time-content > * + * > * {
+                                            border-left-color: rgba(255,255,255,0.05);
+                                        }
+                                        .rbc-time-gutter .rbc-timeslot-group {
+                                            border-right-color: rgba(255,255,255,0.05);
+                                            border-bottom-color: transparent;
+                                        }
+                                        .rbc-label {
+                                            font-size: 0.7rem;
+                                            color: hsl(var(--muted-foreground));
+                                            padding: 0 4px;
+                                        }
+                                        .rbc-toolbar button {
+                                            color: var(--foreground);
+                                            border-color: rgba(255,255,255,0.1);
+                                        }
+                                        .rbc-toolbar button:active,
+                                        .rbc-toolbar button.rbc-active {
+                                            background-image: none;
+                                            background-color: hsl(var(--primary));
+                                            border-color: hsl(var(--primary));
+                                            color: hsl(var(--primary-foreground));
+                                            box-shadow: none;
+                                        }
+                                        .rbc-toolbar button:hover:not(.rbc-active) {
+                                            background-color: rgba(255,255,255,0.05);
+                                        }
+                                    `}</style>
+                                    <DnDCalendar
+                                        localizer={localizer}
+                                        events={calendarEvents}
+                                        defaultView="work_week"
+                                        views={['work_week', 'week', 'day']}
+                                        step={15}
+                                        timeslots={4}
+                                        onEventDrop={onEventDrop}
+                                        onEventResize={() => { }} // Could be implemented later
+                                        resizable={false}
+                                        draggableAccessor={(event: any) => !event.isFixed}
+                                        eventPropGetter={(event: any) => ({
+                                            style: {
+                                                backgroundColor: event.isFixed ? '#f43f5e' : '#3b82f6', // rose-500 / blue-500
+                                                color: 'white',
+                                                borderRadius: '6px',
+                                                border: '1px solid rgba(255,255,255,0.2)'
+                                            }
+                                        })}
+                                        toolbar={true}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>

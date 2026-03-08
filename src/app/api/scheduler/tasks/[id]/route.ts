@@ -45,3 +45,30 @@ export async function DELETE(
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+// PATCH: Update single task (used for drag and drop)
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getSession();
+        if (!session || !session.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const resolvedParams = await params;
+        const taskId = resolvedParams.id;
+        const { scheduledDay, scheduledStartTime } = await req.json();
+
+        const updatedTask = await prisma.task.update({
+            where: { id: taskId, userId: session.user.id },
+            data: { scheduledDay, scheduledStartTime }
+        });
+
+        return NextResponse.json(updatedTask);
+    } catch (error) {
+        console.error("Update task error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
