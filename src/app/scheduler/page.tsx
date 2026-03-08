@@ -15,6 +15,7 @@ import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import './rbc-dark.css'; // Dark mode overrides (must be AFTER library CSS)
 
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(BigCalendar);
