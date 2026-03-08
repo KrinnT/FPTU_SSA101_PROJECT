@@ -9,11 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-// ── Types ────────────────────────────────────────────────────────────────
 type Panel = "profile" | "security" | null;
 type SecurityTab = "password" | "email" | "2fa";
 
-// ── Main Component ────────────────────────────────────────────────────────
 export function UserProfileDropdown() {
     const { user, logout } = useAuth();
     const [open, setOpen] = useState(false);
@@ -24,31 +22,24 @@ export function UserProfileDropdown() {
 
     useEffect(() => { setMounted(true); }, []);
 
-    // Calculate position above the trigger button
     const updatePos = () => {
         if (!triggerRef.current) return;
         const rect = triggerRef.current.getBoundingClientRect();
-        setDropPos({
-            top: rect.top - 8,  // 8px gap above button
-            right: window.innerWidth - rect.right,
-        });
+        setDropPos({ top: rect.top, right: window.innerWidth - rect.right });
     };
 
-    // Close on outside click
+    // Close dropdown on outside click
     useEffect(() => {
-        if (!open) return;
+        if (!open || panel) return;
         const handler = (e: MouseEvent) => {
-            if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
-                // Check if click is inside the portal dropdown
-                const portalEl = document.getElementById("profile-dropdown-portal");
-                if (portalEl && portalEl.contains(e.target as Node)) return;
-                setOpen(false);
-                setPanel(null);
-            }
+            const portal = document.getElementById("user-profile-drop");
+            if (portal && portal.contains(e.target as Node)) return;
+            if (triggerRef.current && triggerRef.current.contains(e.target as Node)) return;
+            setOpen(false);
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
-    }, [open]);
+    }, [open, panel]);
 
     if (!user) return null;
 
@@ -57,117 +48,83 @@ export function UserProfileDropdown() {
         : user.email[0].toUpperCase();
 
     const handleLogout = async () => {
-        localStorage.removeItem("chat_history");
-        localStorage.removeItem("psych-flashcards");
-        localStorage.removeItem("scheduler_fixed");
-        localStorage.removeItem("scheduler_tasks");
-        localStorage.removeItem("forumPosts_clean");
-        localStorage.removeItem("cbtJournal");
+        ["chat_history", "psych-flashcards", "scheduler_fixed", "scheduler_tasks", "forumPosts_clean", "cbtJournal"]
+            .forEach(k => localStorage.removeItem(k));
         await logout();
     };
 
-    const dropdownMenu = (
+    const openPanel = (p: Panel) => {
+        setOpen(false);   // close dropdown first
+        setPanel(p);      // then open modal
+    };
+
+    // ── Dropdown Menu ──────────────────────────────────────────
+    const dropdown = mounted && open && !panel && createPortal(
         <div
-            id="profile-dropdown-portal"
-            style={{
-                position: "fixed",
-                bottom: `calc(100vh - ${dropPos.top}px)`,
-                right: `${dropPos.right}px`,
-                zIndex: 9999,
-            }}
+            id="user-profile-drop"
+            style={{ position: "fixed", bottom: `calc(100vh - ${dropPos.top}px)`, right: `${dropPos.right}px`, zIndex: 9999 }}
             className="w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden"
         >
-            {/* Header */}
             <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
                 <p className="text-sm font-semibold truncate">{user.name || "User"}</p>
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
-
-            {/* Menu Items */}
             <div className="p-1.5 space-y-0.5">
-                <MenuButton
-                    icon={<User className="w-4 h-4" />}
-                    label="Thông tin cá nhân"
-                    onClick={() => { setPanel("profile"); }}
-                />
-                <MenuButton
-                    icon={<Shield className="w-4 h-4" />}
-                    label="Bảo mật"
-                    onClick={() => { setPanel("security"); }}
-                />
+                <MenuBtn icon={<User className="w-4 h-4" />} label="Personal Info" onClick={() => openPanel("profile")} />
+                <MenuBtn icon={<Shield className="w-4 h-4" />} label="Security" onClick={() => openPanel("security")} />
             </div>
-
-            {/* Logout */}
             <div className="p-1.5 border-t border-border/50">
-                <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                    <LogOut className="w-4 h-4" />
-                    Đăng xuất
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
+                    <LogOut className="w-4 h-4" /> Log Out
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
+    );
+
+    // ── Panel Modals ────────────────────────────────────────────
+    const panelModal = mounted && panel && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={e => e.target === e.currentTarget && setPanel(null)}>
+            <div className="bg-card rounded-2xl shadow-2xl border border-border/50 w-full max-w-md overflow-hidden">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50">
+                    <button onClick={() => setPanel(null)} className="text-muted-foreground hover:text-foreground">
+                        <X className="w-4 h-4" />
+                    </button>
+                    <h2 className="font-semibold">{panel === "profile" ? "Personal Info" : "Security"}</h2>
+                </div>
+                <div className="p-5">
+                    {panel === "profile" && <ProfilePanel user={user} onSaved={() => setPanel(null)} />}
+                    {panel === "security" && <SecurityPanel />}
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 
     return (
         <>
-            {/* ── Trigger Button ── */}
             <button
                 ref={triggerRef}
-                onClick={() => {
-                    updatePos();
-                    setOpen(prev => !prev);
-                    setPanel(null);
-                }}
-                className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 rounded-full transition-all shrink-0",
-                    open ? "bg-primary/20" : "hover:bg-white/10"
-                )}
+                onClick={() => { updatePos(); setOpen(v => !v); }}
+                className={cn("flex items-center gap-2 px-2 py-1.5 rounded-full transition-all shrink-0", open ? "bg-primary/20" : "hover:bg-white/10")}
             >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-[11px] font-bold text-white">
                     {initials}
                 </div>
                 <span className="hidden md:block text-sm font-medium max-w-[80px] truncate">
                     {user.name || user.email.split("@")[0]}
                 </span>
             </button>
-
-            {/* ── Portal Dropdown ── */}
-            {mounted && open && !panel && createPortal(dropdownMenu, document.body)}
-
-            {/* ── Profile Panel (fixed modal, no portal needed) ── */}
-            {panel === "profile" && (
-                <PanelModal
-                    title="Thông tin cá nhân"
-                    onClose={() => { setPanel(null); setOpen(false); }}
-                    onBack={() => setPanel(null)}
-                >
-                    <ProfilePanel user={user} onSaved={() => { setPanel(null); setOpen(false); }} />
-                </PanelModal>
-            )}
-
-            {/* ── Security Panel ── */}
-            {panel === "security" && (
-                <PanelModal
-                    title="Bảo mật"
-                    onClose={() => { setPanel(null); setOpen(false); }}
-                    onBack={() => setPanel(null)}
-                >
-                    <SecurityPanel />
-                </PanelModal>
-            )}
+            {dropdown}
+            {panelModal}
         </>
     );
 }
 
-// ── Helper Sub-components ─────────────────────────────────────────────────
-function MenuButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function MenuBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
     return (
-        <button
-            onClick={onClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted/60 transition-colors"
-        >
+        <button onClick={onClick} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted/60 transition-colors">
             <span className="text-muted-foreground">{icon}</span>
             {label}
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto" />
@@ -175,33 +132,7 @@ function MenuButton({ icon, label, onClick }: { icon: React.ReactNode; label: st
     );
 }
 
-function PanelModal({ title, children, onClose, onBack }: {
-    title: string;
-    children: React.ReactNode;
-    onClose: () => void;
-    onBack: () => void;
-}) {
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="bg-card rounded-2xl shadow-2xl border border-border/50 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50">
-                    <button onClick={onBack} className="text-muted-foreground hover:text-foreground transition-colors">
-                        <ChevronRight className="w-4 h-4 rotate-180" />
-                    </button>
-                    <h2 className="font-semibold">{title}</h2>
-                    <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-                <div className="p-5">
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ── Profile Panel ─────────────────────────────────────────────────────────
+// ── Profile Panel ──────────────────────────────────────────────
 function ProfilePanel({ user, onSaved }: { user: { name?: string | null; email: string }; onSaved: () => void }) {
     const [name, setName] = useState(user.name || "");
     const [phone, setPhone] = useState("");
@@ -215,59 +146,52 @@ function ProfilePanel({ user, onSaved }: { user: { name?: string | null; email: 
         });
     }, []);
 
-    async function handleSave() {
+    async function save() {
         setLoading(true); setError(""); setSuccess(false);
         const res = await fetch("/api/auth/profile", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            method: "PATCH", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "updateProfile", name, phone })
         });
         const data = await res.json();
         setLoading(false);
-        if (!res.ok) { setError(data.error || "Lỗi không xác định"); return; }
+        if (!res.ok) { setError(data.error || "Error"); return; }
         setSuccess(true);
         setTimeout(onSaved, 800);
     }
 
     return (
         <div className="space-y-4">
-            <Field label="Họ và tên" value={name} onChange={setName} placeholder="Nguyễn Văn A" />
-            <Field label="Số điện thoại" value={phone} onChange={setPhone} placeholder="0901234567" />
+            <Field label="Full Name" value={name} onChange={setName} placeholder="John Doe" />
+            <Field label="Phone Number" value={phone} onChange={setPhone} placeholder="+84 901 234 567" />
             <div>
                 <Label className="text-xs text-muted-foreground">Email</Label>
-                <p className="text-sm mt-1 text-muted-foreground">{user.email} <span className="text-xs">(đổi ở mục Bảo mật)</span></p>
+                <p className="text-sm mt-1 text-muted-foreground">{user.email} <span className="text-xs">(change in Security tab)</span></p>
             </div>
-            {error && <ErrorMsg text={error} />}
-            {success && <SuccessMsg text="Đã lưu thành công!" />}
-            <Button className="w-full" onClick={handleSave} disabled={loading}>
-                {loading ? "Đang lưu..." : "Lưu thông tin"}
-            </Button>
+            {error && <ErrMsg text={error} />}
+            {success && <OkMsg text="Saved successfully!" />}
+            <Button className="w-full" onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
         </div>
     );
 }
 
-// ── Security Panel ────────────────────────────────────────────────────────
+// ── Security Panel ──────────────────────────────────────────────
 function SecurityPanel() {
     const [tab, setTab] = useState<SecurityTab>("password");
-
+    const tabs: { key: SecurityTab; label: string }[] = [
+        { key: "password", label: "Password" },
+        { key: "email", label: "Email" },
+        { key: "2fa", label: "2FA" },
+    ];
     return (
         <div className="space-y-4">
-            {/* Tab switcher */}
             <div className="flex rounded-xl overflow-hidden border border-border/50 text-xs">
-                {(["password", "email", "2fa"] as SecurityTab[]).map(t => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={cn(
-                            "flex-1 py-2 font-medium transition-colors",
-                            tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40"
-                        )}
-                    >
-                        {t === "password" ? "Mật khẩu" : t === "email" ? "Email" : "2FA"}
+                {tabs.map(t => (
+                    <button key={t.key} onClick={() => setTab(t.key)}
+                        className={cn("flex-1 py-2 font-medium transition-colors", tab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/40")}>
+                        {t.label}
                     </button>
                 ))}
             </div>
-
             {tab === "password" && <ChangePasswordForm />}
             {tab === "email" && <ChangeEmailForm />}
             {tab === "2fa" && <TwoFAInfo />}
@@ -280,30 +204,29 @@ function ChangePasswordForm() {
     const [showCur, setShowCur] = useState(false); const [showNew, setShowNew] = useState(false);
     const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [success, setSuccess] = useState(false);
 
-    async function handleSave() {
-        if (newP !== confirm) { setError("Mật khẩu mới không khớp"); return; }
-        if (newP.length < 8) { setError("Mật khẩu mới tối thiểu 8 ký tự"); return; }
+    async function save() {
+        if (newP !== confirm) { setError("Passwords do not match"); return; }
+        if (newP.length < 8) { setError("New password must be at least 8 characters"); return; }
         setLoading(true); setError(""); setSuccess(false);
         const res = await fetch("/api/auth/profile", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            method: "PATCH", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "changePassword", currentPassword: cur, newPassword: newP })
         });
         const data = await res.json();
         setLoading(false);
-        if (!res.ok) { setError(data.error || "Lỗi"); return; }
+        if (!res.ok) { setError(data.error || "Error"); return; }
         setSuccess(true); setCur(""); setNewP(""); setConfirm("");
     }
 
     return (
         <div className="space-y-3">
-            <PasswordField label="Mật khẩu hiện tại" value={cur} onChange={setCur} show={showCur} onToggle={() => setShowCur(!showCur)} />
-            <PasswordField label="Mật khẩu mới" value={newP} onChange={setNewP} show={showNew} onToggle={() => setShowNew(!showNew)} />
-            <PasswordField label="Xác nhận mật khẩu mới" value={confirm} onChange={setConfirm} show={showNew} onToggle={() => setShowNew(!showNew)} />
-            {error && <ErrorMsg text={error} />}
-            {success && <SuccessMsg text="Đổi mật khẩu thành công!" />}
-            <Button className="w-full" onClick={handleSave} disabled={loading || !cur || !newP || !confirm}>
-                {loading ? "Đang đổi..." : "Đổi mật khẩu"}
+            <PwField label="Current Password" value={cur} onChange={setCur} show={showCur} onToggle={() => setShowCur(!showCur)} />
+            <PwField label="New Password" value={newP} onChange={setNewP} show={showNew} onToggle={() => setShowNew(!showNew)} />
+            <PwField label="Confirm New Password" value={confirm} onChange={setConfirm} show={showNew} onToggle={() => setShowNew(!showNew)} />
+            {error && <ErrMsg text={error} />}
+            {success && <OkMsg text="Password changed successfully!" />}
+            <Button className="w-full" onClick={save} disabled={loading || !cur || !newP || !confirm}>
+                {loading ? "Changing..." : "Change Password"}
             </Button>
         </div>
     );
@@ -314,27 +237,26 @@ function ChangeEmailForm() {
     const [showP, setShowP] = useState(false); const [loading, setLoading] = useState(false);
     const [error, setError] = useState(""); const [success, setSuccess] = useState(false);
 
-    async function handleSave() {
+    async function save() {
         setLoading(true); setError(""); setSuccess(false);
         const res = await fetch("/api/auth/profile", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            method: "PATCH", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "changeEmail", newEmail, currentPassword: cur })
         });
         const data = await res.json();
         setLoading(false);
-        if (!res.ok) { setError(data.error || "Lỗi"); return; }
+        if (!res.ok) { setError(data.error || "Error"); return; }
         setSuccess(true); setCur(""); setNewEmail("");
     }
 
     return (
         <div className="space-y-3">
-            <Field label="Email mới" value={newEmail} onChange={setNewEmail} placeholder="email@fpt.edu.vn" type="email" />
-            <PasswordField label="Mật khẩu hiện tại (xác nhận)" value={cur} onChange={setCur} show={showP} onToggle={() => setShowP(!showP)} />
-            {error && <ErrorMsg text={error} />}
-            {success && <SuccessMsg text="Đổi email thành công! Vui lòng đăng nhập lại." />}
-            <Button className="w-full" onClick={handleSave} disabled={loading || !newEmail || !cur}>
-                {loading ? "Đang đổi..." : "Đổi email"}
+            <Field label="New Email" value={newEmail} onChange={setNewEmail} placeholder="you@example.com" type="email" />
+            <PwField label="Current Password (to confirm)" value={cur} onChange={setCur} show={showP} onToggle={() => setShowP(!showP)} />
+            {error && <ErrMsg text={error} />}
+            {success && <OkMsg text="Email changed! Please log in again." />}
+            <Button className="w-full" onClick={save} disabled={loading || !newEmail || !cur}>
+                {loading ? "Changing..." : "Change Email"}
             </Button>
         </div>
     );
@@ -347,21 +269,19 @@ function TwoFAInfo() {
                 <Shield className="w-7 h-7 text-primary" />
             </div>
             <div>
-                <p className="font-semibold">Xác thực 2 bước (2FA)</p>
-                <p className="text-sm text-muted-foreground mt-1">Tính năng đang được phát triển.</p>
-                <p className="text-xs text-muted-foreground mt-1">2FA qua email OTP sẽ sớm ra mắt.</p>
+                <p className="font-semibold">Two-Factor Authentication (2FA)</p>
+                <p className="text-sm text-muted-foreground mt-1">This feature is under development.</p>
+                <p className="text-xs text-muted-foreground mt-1">Email OTP-based 2FA is coming soon.</p>
             </div>
             <div className="px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs text-left">
-                🚧 Tính năng này đang trong lộ trình phát triển và sẽ được thêm vào trong bản cập nhật tiếp theo.
+                🚧 This feature is on the roadmap and will be available in the next update.
             </div>
         </div>
     );
 }
 
-// ── UI Helpers ────────────────────────────────────────────────────────────
-function Field({ label, value, onChange, placeholder, type = "text" }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
+// ── Tiny UI Atoms ──────────────────────────────────────────────
+function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
     return (
         <div>
             <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -369,10 +289,7 @@ function Field({ label, value, onChange, placeholder, type = "text" }: {
         </div>
     );
 }
-
-function PasswordField({ label, value, onChange, show, onToggle }: {
-    label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void;
-}) {
+function PwField({ label, value, onChange, show, onToggle }: { label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void }) {
     return (
         <div>
             <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -385,19 +302,9 @@ function PasswordField({ label, value, onChange, show, onToggle }: {
         </div>
     );
 }
-
-function ErrorMsg({ text }: { text: string }) {
-    return (
-        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 text-xs">
-            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{text}
-        </div>
-    );
+function ErrMsg({ text }: { text: string }) {
+    return <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 text-xs"><AlertCircle className="w-3.5 h-3.5" />{text}</div>;
 }
-
-function SuccessMsg({ text }: { text: string }) {
-    return (
-        <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-2.5 text-xs">
-            <Check className="w-3.5 h-3.5 flex-shrink-0" />{text}
-        </div>
-    );
+function OkMsg({ text }: { text: string }) {
+    return <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-2.5 text-xs"><Check className="w-3.5 h-3.5" />{text}</div>;
 }

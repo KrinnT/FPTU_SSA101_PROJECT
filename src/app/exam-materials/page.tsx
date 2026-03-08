@@ -4,10 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
-    Upload, Download, Search, FileText, Filter, X,
-    Share2, Copy, BookOpen, Eye, AlertCircle, ChevronDown
+    Upload, Download, Search, FileText, X,
+    Share2, Copy, BookOpen, Eye, AlertCircle, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
@@ -33,7 +32,7 @@ interface Material {
     createdAt: string;
     semester: { id: string; name: string };
     subject: { id: string; code: string };
-    uploadedBy: { name?: string };
+    uploadedBy: { id: string; name?: string };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -65,6 +64,7 @@ function ExamMaterialsContent() {
     const [semesters, setSemesters] = useState<Semester[]>([]);
     const [materials, setMaterials] = useState<Material[]>([]);
     const [total, setTotal] = useState(0);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     const [selectedSemesterId, setSelectedSemesterId] = useState("");
     const [selectedSubjectId, setSelectedSubjectId] = useState("");
@@ -93,9 +93,9 @@ function ExamMaterialsContent() {
     // ─── Data Fetching ──────────────────────────
     useEffect(() => {
         fetch("/api/exam-materials/filters")
-            .then(r => r.json())
-            .then(setSemesters)
-            .catch(console.error);
+            .then(r => r.json()).then(setSemesters).catch(console.error);
+        fetch("/api/auth/me")
+            .then(r => r.json()).then(d => d.user?.id && setCurrentUserId(d.user.id)).catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -180,6 +180,18 @@ function ExamMaterialsContent() {
         navigator.clipboard.writeText(url);
         setCopiedId(material.id);
         setTimeout(() => setCopiedId(null), 2000);
+    }
+
+    async function handleDelete(material: Material) {
+        if (!confirm(`Delete "${material.title}"? This cannot be undone.`)) return;
+        const res = await fetch(`/api/exam-materials/${material.id}`, { method: "DELETE" });
+        if (res.ok) {
+            setMaterials(prev => prev.filter(m => m.id !== material.id));
+            setTotal(t => t - 1);
+        } else {
+            const data = await res.json();
+            alert(data.error || "Failed to delete");
+        }
     }
 
     // ─── Render ──────────────────────────────────
@@ -285,7 +297,9 @@ function ExamMaterialsContent() {
                                     onDownload={() => handleDownload(m)}
                                     onPreview={() => setPreviewMaterial(m)}
                                     onShare={() => copyShareLink(m)}
+                                    onDelete={() => handleDelete(m)}
                                     copied={copiedId === m.id}
+                                    isOwn={currentUserId === m.uploadedBy.id}
                                 />
                             ))}
                         </div>
@@ -458,13 +472,15 @@ function ExamMaterialsContent() {
 
 // ── Material Card Component ──────────────────────────────────────────────
 function MaterialCard({
-    material, onDownload, onPreview, onShare, copied
+    material, onDownload, onPreview, onShare, onDelete, copied, isOwn
 }: {
     material: Material;
     onDownload: () => void;
     onPreview: () => void;
     onShare: () => void;
+    onDelete: () => void;
     copied: boolean;
+    isOwn: boolean;
 }) {
     return (
         <div className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:border-primary/30 transition-all group">
@@ -511,13 +527,14 @@ function MaterialCard({
                 <Button size="sm" className="flex-1 gap-1 text-xs" onClick={onDownload}>
                     <Download className="w-3 h-3" /> Download
                 </Button>
-                <button
-                    onClick={onShare}
-                    className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    title="Copy share link"
-                >
+                <button onClick={onShare} className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Copy link">
                     {copied ? <Copy className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
                 </button>
+                {isOwn && (
+                    <button onClick={onDelete} className="p-2 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete (you uploaded this)">
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
         </div>
     );
