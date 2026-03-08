@@ -545,7 +545,7 @@ function SchedulerContent() {
                                         onChange={e => setNewEvent({ ...newEvent, name: e.target.value })}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-3">
                                     <div className="space-y-2">
                                         <Label>Day</Label>
                                         <select
@@ -558,17 +558,17 @@ function SchedulerContent() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Time</Label>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-2">
                                             <Input
                                                 type="time"
-                                                className="w-full text-sm leading-tight px-2 py-1 h-10"
+                                                className="flex-1 min-w-0 text-sm h-10 px-2"
                                                 value={newEvent.startTime}
                                                 onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })}
                                             />
-                                            <span>-</span>
+                                            <span className="text-muted-foreground flex-shrink-0">–</span>
                                             <Input
                                                 type="time"
-                                                className="w-full text-sm leading-tight px-2 py-1 h-10"
+                                                className="flex-1 min-w-0 text-sm h-10 px-2"
                                                 value={newEvent.endTime}
                                                 onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}
                                             />
