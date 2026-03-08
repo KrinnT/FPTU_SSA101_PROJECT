@@ -130,6 +130,7 @@ model Task {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
   duration          Int      // in hours
+  groupId           String?  // Links related everyday tasks together
   
   // Scheduling info (if assigned)
   scheduledDay      String?  // "Monday"
@@ -138,6 +139,7 @@ model Task {
   createdAt         DateTime @default(now())
 
   @@index([userId])
+  @@index([groupId])
 }
 
 // --- Community System ---

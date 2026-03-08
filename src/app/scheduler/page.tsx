@@ -23,10 +23,11 @@ interface Task {
     name: string;
     duration: number; // in hours
     assignedSlot?: { day: string, startTime: string }; // Assigned by algorithm
+    groupId?: string;
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const TIMES = Array.from({ length: 16 }, (_, i) => i + 7); // 7:00 to 22:00
+const TIMES = Array.from({ length: 24 }, (_, i) => i); // 0:00 to 23:00
 
 export default function SchedulerPage() {
     return (
@@ -64,6 +65,7 @@ function SchedulerContent() {
                         id: t.id,
                         name: t.name,
                         duration: t.duration,
+                        groupId: t.groupId,
                         assignedSlot: (t.scheduledDay && t.scheduledStartTime)
                             ? { day: t.scheduledDay, startTime: t.scheduledStartTime }
                             : undefined
@@ -143,8 +145,8 @@ function SchedulerContent() {
     const findFirstAvailableSlot = (duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
         for (const day of DAYS) {
             // Step by 15 mins (0.25)
-            for (let hour = 7; hour <= 22; hour += 0.25) {
-                if (hour + duration > 23) continue;
+            for (let hour = 0; hour <= 23.75; hour += 0.25) {
+                if (hour + duration > 24) continue;
 
                 if (!checkCollision(day, hour, duration, currentFixed, currentTasks, ignoreTaskId)) {
                     return {
@@ -171,13 +173,14 @@ function SchedulerContent() {
         const newTasksParams: any[] = [];
         let currentFixed = fixedEvents;
         let localTasksClone = [...tasks];
+        const groupId = crypto.randomUUID(); // Unique group ID for this everyday task set
 
         DAYS.forEach(day => {
             // Find slot
             let assignedSlot = undefined;
             // Step 15 mins
-            for (let hour = 7; hour <= 22; hour += 0.25) {
-                if (hour + everydayTask.duration > 23) continue;
+            for (let hour = 0; hour <= 23.75; hour += 0.25) {
+                if (hour + everydayTask.duration > 24) continue;
                 if (!checkCollision(day, hour, everydayTask.duration, currentFixed, localTasksClone)) {
                     assignedSlot = { day, startTime: floatToTime(hour) };
                     break;
@@ -201,7 +204,8 @@ function SchedulerContent() {
                     name: everydayTask.name,
                     duration: everydayTask.duration,
                     scheduledDay: assignedSlot.day,
-                    scheduledStartTime: assignedSlot.startTime
+                    scheduledStartTime: assignedSlot.startTime,
+                    groupId
                 });
             }
         });
@@ -217,7 +221,7 @@ function SchedulerContent() {
                 const t = await res.json();
                 // Hydrate and add to state
                 const hydrated = {
-                    id: t.id, name: t.name, duration: t.duration,
+                    id: t.id, name: t.name, duration: t.duration, groupId: t.groupId,
                     assignedSlot: (t.scheduledDay && t.scheduledStartTime) ? { day: t.scheduledDay, startTime: t.scheduledStartTime } : undefined
                 };
                 setTasks(prev => [...prev, hydrated]);
@@ -249,7 +253,7 @@ function SchedulerContent() {
             if (res.ok) {
                 const t = await res.json();
                 const hydrated = {
-                    id: t.id, name: t.name, duration: t.duration,
+                    id: t.id, name: t.name, duration: t.duration, groupId: t.groupId,
                     assignedSlot: (t.scheduledDay && t.scheduledStartTime) ? { day: t.scheduledDay, startTime: t.scheduledStartTime } : undefined
                 };
                 setTasks([...tasks, hydrated]);
@@ -268,10 +272,16 @@ function SchedulerContent() {
         } catch (e) { console.error(e); }
     };
 
-    const removeTask = async (id: string) => {
+    const removeTask = async (task: Task) => {
         try {
-            await fetch(`/api/scheduler/tasks/${id}`, { method: "DELETE" });
-            setTasks(tasks.filter(t => t.id !== id));
+            await fetch(`/api/scheduler/tasks/${task.id}`, { method: "DELETE" });
+
+            // If it has a groupId, remove all tasks with the same groupId from state
+            if (task.groupId) {
+                setTasks(tasks.filter(t => t.groupId !== task.groupId));
+            } else {
+                setTasks(tasks.filter(t => t.id !== task.id));
+            }
         } catch (e) { console.error(e); }
     };
 
@@ -371,21 +381,19 @@ function SchedulerContent() {
                                     <div className="space-y-2">
                                         <Label>Time</Label>
                                         <div className="flex items-center gap-1">
-                                            <select
-                                                className="w-full h-10 rounded-md border border-input bg-background px-1 text-sm"
+                                            <Input
+                                                type="time"
+                                                className="w-full text-sm leading-tight px-2 py-1 h-10"
                                                 value={newEvent.startTime}
                                                 onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })}
-                                            >
-                                                {TIMES.slice(0, -1).map(t => <option key={t} value={`${t}:00`}>{t}:00</option>)}
-                                            </select>
+                                            />
                                             <span>-</span>
-                                            <select
-                                                className="w-full h-10 rounded-md border border-input bg-background px-1 text-sm"
+                                            <Input
+                                                type="time"
+                                                className="w-full text-sm leading-tight px-2 py-1 h-10"
                                                 value={newEvent.endTime}
                                                 onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}
-                                            >
-                                                {TIMES.slice(1).map(t => <option key={t} value={`${t}:00`}>{t}:00</option>)}
-                                            </select>
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -505,7 +513,7 @@ function SchedulerContent() {
                                                 </div>
                                                 {!t.assignedSlot && <span className="text-[10px] text-red-400">Not scheduled (no space)</span>}
                                             </div>
-                                            <button onClick={() => removeTask(t.id)} className="text-muted-foreground hover:text-red-500">
+                                            <button onClick={() => removeTask(t)} className="text-muted-foreground hover:text-red-500">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
