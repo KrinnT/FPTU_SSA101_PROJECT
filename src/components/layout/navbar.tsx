@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, LogOut, Clock, Play, Gamepad2, BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { UserProfileDropdown } from "@/components/layout/user-profile-dropdown";
 
 export function Navbar() {
     const pathname = usePathname();
@@ -75,23 +76,7 @@ export function Navbar() {
                 {commItems.map((item) => <NavLink key={item.href} item={item} />)}
 
                 {user ? (
-                    <button
-                        onClick={async () => {
-                            // Force clear local storage to prevent data leakage between users
-                            localStorage.removeItem("chat_history");
-                            localStorage.removeItem("psych-flashcards");
-                            localStorage.removeItem("scheduler_fixed");
-                            localStorage.removeItem("scheduler_tasks");
-                            // Clear community and exercises local storage
-                            localStorage.removeItem("forumPosts_clean");
-                            localStorage.removeItem("cbtJournal");
-                            await logout();
-                        }}
-                        className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-3 py-2 rounded-full text-[10px] md:text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all shrink-0"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span className="hidden md:inline">Logout</span>
-                    </button> // Removed mobile text for logout to save space, icon is clear enough? or keep standard. Keeping standard for consistency but let's hide text on mobile if needed. Actually let's keep it consistent.
+                    <UserProfileDropdown />
                 ) : (
                     <Link
                         href="/login"
