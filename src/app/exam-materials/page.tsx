@@ -79,8 +79,9 @@ function ExamMaterialsContent() {
     const [uploadForm, setUploadForm] = useState({
         title: "", description: "", semesterId: "", subjectId: ""
     });
-    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadFiles, setUploadFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<{ name: string; done: boolean; error?: string }[]>([]);
     const [uploadError, setUploadError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,35 +141,54 @@ function ExamMaterialsContent() {
     }
 
     async function handleUpload() {
-        if (!uploadFile || !uploadForm.title || !uploadForm.semesterId || !uploadForm.subjectId) {
-            setUploadError("Please fill in all required fields.");
+        if (!uploadFiles.length || !uploadForm.semesterId || !uploadForm.subjectId) {
+            setUploadError("Please select at least one file and choose Semester + Subject.");
             return;
         }
         setUploading(true);
         setUploadError("");
+        setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: false })));
 
-        const form = new FormData();
-        form.append("file", uploadFile);
-        form.append("title", uploadForm.title);
-        form.append("description", uploadForm.description);
-        form.append("semesterId", uploadForm.semesterId);
-        form.append("subjectId", uploadForm.subjectId);
+        let anyFailed = false;
+        for (let i = 0; i < uploadFiles.length; i++) {
+            const file = uploadFiles[i];
+            try {
+                const form = new FormData();
+                form.append("file", file);
+                // Use filename (without extension) as title if no title provided
+                const title = uploadForm.title || file.name.replace(/\.[^.]+$/, "");
+                form.append("title", title);
+                form.append("description", uploadForm.description);
+                form.append("semesterId", uploadForm.semesterId);
+                form.append("subjectId", uploadForm.subjectId);
 
-        try {
-            const res = await fetch("/api/exam-materials", { method: "POST", body: form });
-            const data = await res.json();
-            if (!res.ok) {
-                setUploadError(data.error || "Upload failed");
-            } else {
+                const res = await fetch("/api/exam-materials", { method: "POST", body: form });
+                const data = await res.json();
+
+                setUploadProgress(prev => prev.map((p, idx) =>
+                    idx === i ? { ...p, done: true, error: res.ok ? undefined : (data.error || "Failed") } : p
+                ));
+                if (!res.ok) anyFailed = true;
+            } catch {
+                setUploadProgress(prev => prev.map((p, idx) =>
+                    idx === i ? { ...p, done: true, error: "Network error" } : p
+                ));
+                anyFailed = true;
+            }
+        }
+
+        setUploading(false);
+        if (!anyFailed) {
+            setTimeout(() => {
                 setShowUploadModal(false);
                 setUploadForm({ title: "", description: "", semesterId: "", subjectId: "" });
-                setUploadFile(null);
+                setUploadFiles([]);
+                setUploadProgress([]);
                 fetchMaterials(1, true);
-            }
-        } catch {
-            setUploadError("Network error. Please try again.");
-        } finally {
-            setUploading(false);
+            }, 600);
+        } else {
+            setUploadError("Some files failed to upload. Check status above.");
+            fetchMaterials(1, true);
         }
     }
 
@@ -374,46 +394,57 @@ function ExamMaterialsContent() {
                                 </select>
                             </div>
                             <div>
-                                <Label className="text-sm">File <span className="text-red-400">*</span></Label>
+                                <Label className="text-sm">Files <span className="text-red-400">*</span> <span className="text-xs text-muted-foreground">(multiple allowed)</span></Label>
                                 <div
                                     className={cn(
-                                        "mt-1 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors",
-                                        uploadFile ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/20"
+                                        "mt-1 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors",
+                                        uploadFiles.length ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/20"
                                     )}
                                     onClick={() => fileInputRef.current?.click()}
                                 >
                                     <input
                                         ref={fileInputRef}
                                         type="file"
+                                        multiple
                                         className="hidden"
                                         accept=".pdf,.docx,.doc,.pptx,.ppt,.zip,.png,.jpg,.jpeg"
-                                        onChange={e => setUploadFile(e.target.files?.[0] ?? null)}
+                                        onChange={e => setUploadFiles(Array.from(e.target.files ?? []))}
                                     />
-                                    {uploadFile ? (
-                                        <div>
-                                            <p className="font-medium text-primary text-sm">{uploadFile.name}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">{formatSize(uploadFile.size)}</p>
+                                    {uploadFiles.length > 0 ? (
+                                        <div className="space-y-1.5 text-left max-h-32 overflow-y-auto">
+                                            {uploadFiles.map((f, i) => {
+                                                const prog = uploadProgress[i];
+                                                return (
+                                                    <div key={i} className="flex items-center gap-2 text-xs">
+                                                        <span className={prog?.error ? "text-red-400" : prog?.done ? "text-green-400" : "text-primary"}>●</span>
+                                                        <span className="truncate flex-1">{f.name}</span>
+                                                        <span className="text-muted-foreground shrink-0">{formatSize(f.size)}</span>
+                                                        {prog?.error && <span className="text-red-400 shrink-0">✗</span>}
+                                                        {prog?.done && !prog.error && <span className="text-green-400 shrink-0">✓</span>}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div>
                                             <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                                            <p className="text-sm text-muted-foreground">Click to choose file</p>
-                                            <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PPTX, ZIP, PNG, JPG · max 25MB</p>
+                                            <p className="text-sm text-muted-foreground">Click to choose one or more files</p>
+                                            <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PPTX, ZIP, PNG, JPG · max 10MB each</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <Button className="w-full gap-2" onClick={handleUpload} disabled={uploading}>
+                        <Button className="w-full gap-2" onClick={handleUpload} disabled={uploading || !uploadFiles.length}>
                             {uploading ? (
                                 <>
                                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Uploading...
+                                    Uploading {uploadFiles.length} file{uploadFiles.length > 1 ? "s" : ""}...
                                 </>
                             ) : (
                                 <>
-                                    <Upload className="w-4 h-4" /> Upload
+                                    <Upload className="w-4 h-4" /> Upload {uploadFiles.length > 1 ? `${uploadFiles.length} Files` : "File"}
                                 </>
                             )}
                         </Button>
@@ -480,7 +511,7 @@ function MaterialCard({
     isOwn: boolean;
 }) {
     return (
-        <div className="glass-card rounded-xl p-4 flex flex-col gap-3 hover:border-primary/30 transition-all group">
+        <div className="glass-card rounded-xl p-4 flex flex-col gap-2.5 hover:border-primary/30 transition-colors h-[220px]">
             {/* Top row */}
             <div className="flex items-start gap-3">
                 <div className="text-2xl flex-shrink-0">{typeIcon(material.type)}</div>
