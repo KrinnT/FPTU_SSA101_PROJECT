@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, LogOut, Clock, Play, Gamepad2 } from "lucide-react";
+import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, LogOut, Clock, Play, Gamepad2, BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export function Navbar() {
@@ -29,6 +29,7 @@ export function Navbar() {
         { name: "Focus", href: "/focus", icon: <Play className="w-4 h-4" /> },
         { name: "Flashcards", href: "/flashcards", icon: <Brain className="w-4 h-4" /> },
         { name: "Schedule", href: "/scheduler", icon: <Clock className="w-4 h-4" /> },
+        { name: "Exams", href: "/exam-materials", icon: <BookOpen className="w-4 h-4" /> },
     ];
 
     const commItems = [
