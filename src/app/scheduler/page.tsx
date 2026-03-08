@@ -646,6 +646,24 @@ function SchedulerContent() {
                                 <Button className="w-full" variant="secondary" onClick={addEverydayTask} disabled={!everydayTask.name}>
                                     <Plus className="w-4 h-4 mr-2" /> Add Everyday Task
                                 </Button>
+
+                                {/* EVERYDAY TASKS LIST (GROUPED) - belongs to this section */}
+                                {groupedEverydayTasks.length > 0 && (
+                                    <div className="space-y-2 pt-3 border-t border-border">
+                                        <Label className="text-xs text-muted-foreground block">Added Everyday Tasks</Label>
+                                        {groupedEverydayTasks.map((groupTask: any) => (
+                                            <div key={groupTask.groupId} className="flex justify-between items-center text-sm p-2 bg-primary/10 rounded-md border border-primary/20">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-primary">{groupTask.name}</span>
+                                                    <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{groupTask.duration}h/day</span>
+                                                </div>
+                                                <button onClick={() => removeTask(groupTask)} className="text-muted-foreground hover:text-red-500">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -686,28 +704,6 @@ function SchedulerContent() {
                                 <Button className="w-full" variant="secondary" onClick={addNormalTask} disabled={!normalTask.name}>
                                     <Plus className="w-4 h-4 mr-2" /> Add Task
                                 </Button>
-
-                                {/* EVERYDAY TASKS LIST (GROUPED) */}
-                                {groupedEverydayTasks.length > 0 && (
-                                    <div className="space-y-2 mb-4">
-                                        <Label className="flex items-center gap-2 mb-2 font-semibold text-primary">
-                                            Added Everyday Tasks
-                                        </Label>
-                                        {groupedEverydayTasks.map((groupTask: any) => (
-                                            <div key={groupTask.groupId} className="flex justify-between items-center text-sm p-2 bg-primary/10 rounded-md border border-primary/20">
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center">
-                                                        <span className="font-semibold text-primary">{groupTask.name}</span>
-                                                        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{groupTask.duration}h/day</span>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => removeTask(groupTask)} className="text-muted-foreground hover:text-red-500">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
 
                                 {/* Normal Task List */}
                                 <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 border-t border-border pt-3">
