@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { put } from '@vercel/blob';
 
 // GET: Fetch materials with optional filters
 export async function GET(req: Request) {
@@ -14,15 +13,10 @@ export async function GET(req: Request) {
         const limit = 20;
         const skip = (page - 1) * limit;
 
-        const where: any = {
-            status: 'APPROVED',
-        };
-
+        const where: any = { status: 'APPROVED' };
         if (semesterId) where.semesterId = semesterId;
         if (subjectId) where.subjectId = subjectId;
-        if (search) {
-            where.title = { contains: search, mode: 'insensitive' };
-        }
+        if (search) where.title = { contains: search, mode: 'insensitive' };
 
         const [materials, total] = await Promise.all([
             prisma.material.findMany({
@@ -30,10 +24,13 @@ export async function GET(req: Request) {
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
-                include: {
+                select: {
+                    id: true, title: true, description: true, fileUrl: true,
+                    size: true, type: true, totalDownloads: true, createdAt: true,
                     semester: { select: { id: true, name: true } },
                     subject: { select: { id: true, code: true } },
                     uploadedBy: { select: { id: true, name: true } },
+                    // DO NOT select fileContent here (too large)
                 }
             }),
             prisma.material.count({ where })
@@ -46,7 +43,7 @@ export async function GET(req: Request) {
     }
 }
 
-// POST: Upload a new material (auth required)
+// POST: Upload a new material (auth required) - stores file as base64 in DB
 export async function POST(req: Request) {
     try {
         const session = await getSession();
@@ -68,39 +65,42 @@ export async function POST(req: Request) {
         // Security: block dangerous file types
         const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.vbs', '.msi', '.dll'];
         const fileName = file.name.toLowerCase();
-        const isBlocked = blockedExtensions.some(ext => fileName.endsWith(ext));
-        if (isBlocked) {
+        if (blockedExtensions.some(ext => fileName.endsWith(ext))) {
             return NextResponse.json({ error: "File type not allowed for security reasons" }, { status: 400 });
         }
 
-        // Validate allowed types
+        // Only allow safe types
         const allowedExtensions = ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.zip', '.png', '.jpg', '.jpeg'];
-        const isAllowed = allowedExtensions.some(ext => fileName.endsWith(ext));
-        if (!isAllowed) {
+        if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
             return NextResponse.json({ error: "Only PDF, DOCX, PPTX, ZIP, PNG, JPG files are allowed" }, { status: 400 });
         }
 
-        // Size limit: 25MB
-        const MAX_SIZE = 25 * 1024 * 1024;
+        // Size limit: 10MB for DB storage (base64 adds ~33% overhead)
+        const MAX_SIZE = 10 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
-            return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
+            return NextResponse.json({ error: "File too large (max 10MB for database storage)" }, { status: 400 });
         }
 
-        // Sanitize filename and upload to Vercel Blob
-        const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const blobName = `exam-materials/${Date.now()}_${sanitized}`;
+        // Convert file to base64
+        const bytes = await file.arrayBuffer();
+        const base64 = Buffer.from(bytes).toString('base64');
+        const ext = fileName.split('.').pop()?.toUpperCase() || 'UNKNOWN';
 
-        const blob = await put(blobName, file, {
-            access: 'public',
-        });
-
-        const ext = sanitized.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+        // Derive MIME type
+        const mimeMap: Record<string, string> = {
+            pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            doc: 'application/msword', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            ppt: 'application/vnd.ms-powerpoint', zip: 'application/zip',
+            png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        };
+        const mime = mimeMap[ext.toLowerCase()] || 'application/octet-stream';
 
         const material = await prisma.material.create({
             data: {
                 title,
                 description: description || null,
-                fileUrl: blob.url,
+                fileUrl: `/api/exam-materials/file?id=PLACEHOLDER`, // updated after create
+                fileContent: `data:${mime};base64,${base64}`,
                 size: file.size,
                 type: ext,
                 semesterId,
@@ -108,14 +108,18 @@ export async function POST(req: Request) {
                 uploadedById: session.user.id,
                 status: 'APPROVED',
             },
-            include: {
-                semester: { select: { name: true } },
-                subject: { select: { code: true } },
-                uploadedBy: { select: { name: true } },
-            }
         });
 
-        return NextResponse.json(material);
+        // Update fileUrl with actual ID
+        await prisma.material.update({
+            where: { id: material.id },
+            data: { fileUrl: `/api/exam-materials/file?id=${material.id}` }
+        });
+
+        return NextResponse.json({
+            id: material.id, title: material.title, type: material.type,
+            size: material.size, createdAt: material.createdAt
+        });
     } catch (error) {
         console.error('[exam-materials POST]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

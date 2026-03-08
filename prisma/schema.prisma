@@ -220,7 +220,8 @@ model Material {
   id              String   @id @default(cuid())
   title           String
   description     String?  @db.Text
-  fileUrl         String   // Local path or cloud URL
+  fileUrl         String   // Access URL (data: URL served via route)
+  fileContent     String?  @db.Text // base64-encoded file content
   size            Int      // in bytes
   type            String   // Extension or MIME type
   totalDownloads  Int      @default(0)
