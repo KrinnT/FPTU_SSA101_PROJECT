@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { put } from '@vercel/blob';
 
 // GET: Fetch materials with optional filters
 export async function GET(req: Request) {
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ materials, total, page, limit });
     } catch (error) {
-        console.error(error);
+        console.error('[exam-materials GET]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     try {
         const session = await getSession();
         if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized - please login first" }, { status: 401 });
         }
 
         const formData = await req.formData();
@@ -61,15 +62,15 @@ export async function POST(req: Request) {
         const subjectId = formData.get('subjectId') as string;
 
         if (!file || !title || !semesterId || !subjectId) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+            return NextResponse.json({ error: "Missing required fields (title, semester, subject, file)" }, { status: 400 });
         }
 
         // Security: block dangerous file types
-        const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.vbs', '.js', '.msi'];
+        const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.vbs', '.msi', '.dll'];
         const fileName = file.name.toLowerCase();
         const isBlocked = blockedExtensions.some(ext => fileName.endsWith(ext));
         if (isBlocked) {
-            return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
+            return NextResponse.json({ error: "File type not allowed for security reasons" }, { status: 400 });
         }
 
         // Validate allowed types
@@ -85,32 +86,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "File too large (max 25MB)" }, { status: 400 });
         }
 
-        // Read file content and save to public/uploads/materials
-        const { writeFile, mkdir } = await import('fs/promises');
-        const { join } = await import('path');
-
-        const uploadDir = join(process.cwd(), 'public', 'uploads', 'materials');
-        await mkdir(uploadDir, { recursive: true });
-
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        // Sanitize filename to prevent path traversal
+        // Sanitize filename and upload to Vercel Blob
         const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const uniqueName = `${Date.now()}_${sanitized}`;
-        const filePath = join(uploadDir, uniqueName);
-        await writeFile(filePath, buffer);
+        const blobName = `exam-materials/${Date.now()}_${sanitized}`;
 
-        const fileUrl = `/uploads/materials/${uniqueName}`;
+        const blob = await put(blobName, file, {
+            access: 'public',
+        });
 
-        // Determine file type from extension
         const ext = sanitized.split('.').pop()?.toUpperCase() || 'UNKNOWN';
 
         const material = await prisma.material.create({
             data: {
                 title,
                 description: description || null,
-                fileUrl,
+                fileUrl: blob.url,
                 size: file.size,
                 type: ext,
                 semesterId,
@@ -125,16 +115,9 @@ export async function POST(req: Request) {
             }
         });
 
-        return NextResponse.json(material_serialized(material));
+        return NextResponse.json(material);
     } catch (error) {
-        console.error(error);
+        console.error('[exam-materials POST]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
-}
-
-function material_serialized(m: any) {
-    return {
-        ...m,
-        size: m.size,
-    };
 }
