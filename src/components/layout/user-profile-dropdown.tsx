@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/auth-context";
-import { User, Settings, Shield, LogOut, ChevronRight, X, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
+import { User, Shield, LogOut, ChevronRight, X, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,24 +18,42 @@ export function UserProfileDropdown() {
     const { user, logout } = useAuth();
     const [open, setOpen] = useState(false);
     const [panel, setPanel] = useState<Panel>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
+
+    // Calculate position above the trigger button
+    const updatePos = () => {
+        if (!triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        setDropPos({
+            top: rect.top - 8,  // 8px gap above button
+            right: window.innerWidth - rect.right,
+        });
+    };
 
     // Close on outside click
     useEffect(() => {
+        if (!open) return;
         const handler = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+            if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
+                // Check if click is inside the portal dropdown
+                const portalEl = document.getElementById("profile-dropdown-portal");
+                if (portalEl && portalEl.contains(e.target as Node)) return;
                 setOpen(false);
                 setPanel(null);
             }
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
-    }, []);
+    }, [open]);
 
     if (!user) return null;
 
     const initials = user.name
-        ? user.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
+        ? user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
         : user.email[0].toUpperCase();
 
     const handleLogout = async () => {
@@ -47,13 +66,62 @@ export function UserProfileDropdown() {
         await logout();
     };
 
+    const dropdownMenu = (
+        <div
+            id="profile-dropdown-portal"
+            style={{
+                position: "fixed",
+                bottom: `calc(100vh - ${dropPos.top}px)`,
+                right: `${dropPos.right}px`,
+                zIndex: 9999,
+            }}
+            className="w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden"
+        >
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
+                <p className="text-sm font-semibold truncate">{user.name || "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+
+            {/* Menu Items */}
+            <div className="p-1.5 space-y-0.5">
+                <MenuButton
+                    icon={<User className="w-4 h-4" />}
+                    label="Thông tin cá nhân"
+                    onClick={() => { setPanel("profile"); }}
+                />
+                <MenuButton
+                    icon={<Shield className="w-4 h-4" />}
+                    label="Bảo mật"
+                    onClick={() => { setPanel("security"); }}
+                />
+            </div>
+
+            {/* Logout */}
+            <div className="p-1.5 border-t border-border/50">
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Đăng xuất
+                </button>
+            </div>
+        </div>
+    );
+
     return (
-        <div ref={dropdownRef} className="relative shrink-0">
+        <>
             {/* ── Trigger Button ── */}
             <button
-                onClick={() => { setOpen(!open); setPanel(null); }}
+                ref={triggerRef}
+                onClick={() => {
+                    updatePos();
+                    setOpen(prev => !prev);
+                    setPanel(null);
+                }}
                 className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 rounded-full transition-all",
+                    "flex items-center gap-2 px-2 py-1.5 rounded-full transition-all shrink-0",
                     open ? "bg-primary/20" : "hover:bg-white/10"
                 )}
             >
@@ -65,44 +133,11 @@ export function UserProfileDropdown() {
                 </span>
             </button>
 
-            {/* ── Dropdown Menu ── */}
-            {open && !panel && (
-                <div className="absolute bottom-full mb-2 right-0 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 z-50">
-                    {/* Header */}
-                    <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
-                        <p className="text-sm font-semibold truncate">{user.name || "User"}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    </div>
+            {/* ── Portal Dropdown ── */}
+            {mounted && open && !panel && createPortal(dropdownMenu, document.body)}
 
-                    {/* Menu Items */}
-                    <div className="p-1.5 space-y-0.5">
-                        <MenuButton
-                            icon={<User className="w-4 h-4" />}
-                            label="Thông tin cá nhân"
-                            onClick={() => setPanel("profile")}
-                        />
-                        <MenuButton
-                            icon={<Shield className="w-4 h-4" />}
-                            label="Bảo mật"
-                            onClick={() => setPanel("security")}
-                        />
-                    </div>
-
-                    {/* Logout */}
-                    <div className="p-1.5 border-t border-border/50">
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            Đăng xuất
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Profile Panel ── */}
-            {open && panel === "profile" && (
+            {/* ── Profile Panel (fixed modal, no portal needed) ── */}
+            {panel === "profile" && (
                 <PanelModal
                     title="Thông tin cá nhân"
                     onClose={() => { setPanel(null); setOpen(false); }}
@@ -113,7 +148,7 @@ export function UserProfileDropdown() {
             )}
 
             {/* ── Security Panel ── */}
-            {open && panel === "security" && (
+            {panel === "security" && (
                 <PanelModal
                     title="Bảo mật"
                     onClose={() => { setPanel(null); setOpen(false); }}
@@ -122,7 +157,7 @@ export function UserProfileDropdown() {
                     <SecurityPanel />
                 </PanelModal>
             )}
-        </div>
+        </>
     );
 }
 
