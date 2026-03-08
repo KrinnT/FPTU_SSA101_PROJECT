@@ -128,18 +128,15 @@ function ExamMaterialsContent() {
     const uploadSubjects = semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [];
 
     async function handleDownload(material: Material) {
-        const res = await fetch(`/api/exam-materials/${material.id}/download`);
-        const data = await res.json();
-        if (data.fileUrl) {
-            const a = document.createElement("a");
-            a.href = data.fileUrl;
-            a.download = material.title;
-            a.click();
-            // Optimistic UI update for download count
-            setMaterials(prev => prev.map(m =>
-                m.id === material.id ? { ...m, totalDownloads: m.totalDownloads + 1 } : m
-            ));
-        }
+        // Open the file-serving route directly — it streams binary and increments counter
+        const a = document.createElement("a");
+        a.href = `/api/exam-materials/file?id=${material.id}`;
+        a.download = material.title;
+        a.click();
+        // Optimistic UI counter bump
+        setMaterials(prev => prev.map(m =>
+            m.id === material.id ? { ...m, totalDownloads: m.totalDownloads + 1 } : m
+        ));
     }
 
     async function handleUpload() {
@@ -524,14 +521,11 @@ function MaterialCard({
                 <Button size="sm" variant="ghost" className="flex-1 gap-1 text-xs" onClick={onPreview}>
                     <Eye className="w-3 h-3" /> Preview
                 </Button>
-                <Button size="sm" className="flex-1 gap-1 text-xs" onClick={onDownload}>
-                    <Download className="w-3 h-3" /> Download
-                </Button>
                 <button onClick={onShare} className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Copy link">
                     {copied ? <Copy className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
                 </button>
                 {isOwn && (
-                    <button onClick={onDelete} className="p-2 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete (you uploaded this)">
+                    <button onClick={onDelete} className="p-2 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
                         <Trash2 className="w-3.5 h-3.5" />
                     </button>
                 )}
