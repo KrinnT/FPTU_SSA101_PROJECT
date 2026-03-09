@@ -563,6 +563,17 @@ function ExamMaterialsContent() {
                                 )
                             )}
                         </div>
+                        {/* ── Bottom Download Bar ── */}
+                        <div className="p-4 border-t border-border flex items-center justify-between gap-3 bg-card">
+                            <p className="text-xs text-muted-foreground truncate">
+                                {previewMaterial?.files && previewMaterial.files.length > 1
+                                    ? `${previewMaterial.files.length} files in this document`
+                                    : (previewMaterial?.type || '')}
+                            </p>
+                            <Button onClick={() => handleDownload(previewMaterial!)} className="gap-2 shrink-0">
+                                <Download className="w-4 h-4" /> Download
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -623,6 +634,9 @@ function MaterialCard({
             <div className="flex gap-2 pt-1 border-t border-border/50">
                 <Button size="sm" variant="ghost" className="flex-1 gap-1 text-xs" onClick={onPreview}>
                     <Eye className="w-3 h-3" /> Preview
+                </Button>
+                <Button size="sm" variant="ghost" className="flex-1 gap-1 text-xs" onClick={onDownload}>
+                    <Download className="w-3 h-3" /> Download
                 </Button>
                 <button onClick={onShare} className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Copy link">
                     {copied ? <Copy className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
