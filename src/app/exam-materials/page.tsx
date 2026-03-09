@@ -90,6 +90,7 @@ function ExamMaterialsContent() {
     const [uploadError, setUploadError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previewFileIdx, setPreviewFileIdx] = useState(0);
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     // Preview Modal
     const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
@@ -497,7 +498,7 @@ function ExamMaterialsContent() {
                                             {uploadFiles.map((f, i) => (
                                                 <button
                                                     key={i}
-                                                    onClick={() => setPreviewFileIdx(i)}
+                                                    onClick={() => { setPreviewFileIdx(i); setPreviewLoading(true); }}
                                                     className={cn(
                                                         "px-2 py-0.5 text-xs rounded-md border transition-colors",
                                                         previewFileIdx === i
@@ -511,18 +512,26 @@ function ExamMaterialsContent() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="rounded-xl overflow-hidden border border-border/50 bg-muted/10">
+                                <div className="relative rounded-xl overflow-hidden border border-border/50 bg-muted/10">
+                                    {previewLoading && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/40 z-10 gap-2">
+                                            <span className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                            <span className="text-sm text-muted-foreground">Loading preview...</span>
+                                        </div>
+                                    )}
                                     {uploadFiles[previewFileIdx].type === 'application/pdf' ? (
                                         <iframe
                                             src={uploadFiles[previewFileIdx].previewUrl}
                                             className="w-full h-[50vh]"
                                             title={uploadFiles[previewFileIdx].name}
+                                            onLoad={() => setPreviewLoading(false)}
                                         />
                                     ) : (
                                         <img
                                             src={uploadFiles[previewFileIdx].previewUrl}
                                             alt={uploadFiles[previewFileIdx].name}
                                             className="max-w-full max-h-[50vh] mx-auto object-contain"
+                                            onLoad={() => setPreviewLoading(false)}
                                         />
                                     )}
                                 </div>
