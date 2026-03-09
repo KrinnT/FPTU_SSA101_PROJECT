@@ -219,10 +219,10 @@ function ExamMaterialsContent() {
 
     // ─── Render ──────────────────────────────────
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background w-full overflow-x-hidden">
             {/* ── Header ── */}
             <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="w-full max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
                             <BookOpen className="w-6 h-6 text-primary" />
@@ -237,7 +237,7 @@ function ExamMaterialsContent() {
             </div>
 
             {/* ── Filter Bar ── */}
-            <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="w-full max-w-[1400px] mx-auto px-6 py-4">
                 <div className="glass-card p-4 rounded-xl flex flex-wrap gap-3 items-end">
                     {/* Search */}
                     <div className="flex-1 min-w-[180px] space-y-1">
@@ -293,13 +293,13 @@ function ExamMaterialsContent() {
             </div>
 
             {/* ── Materials Grid ── */}
-            <div className="max-w-7xl mx-auto px-4 pb-12">
+            <div className="w-full max-w-[1400px] mx-auto px-6 pb-12">
                 <p className="text-sm text-muted-foreground mb-4">
                     {loading ? "Loading..." : `${total} material${total !== 1 ? "s" : ""} found`}
                 </p>
 
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <div key={i} className="h-48 rounded-xl bg-muted/30 animate-pulse" />
                         ))}
@@ -312,7 +312,7 @@ function ExamMaterialsContent() {
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {materials.map(m => (
                                 <MaterialCard
                                     key={m.id}
@@ -342,7 +342,7 @@ function ExamMaterialsContent() {
             {/* ── Upload Modal ── */}
             {showUploadModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-border/50 space-y-4">
+                    <div className="bg-card rounded-2xl p-6 w-full max-w-4xl shadow-2xl border border-border/50 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold">Upload Material</h2>
                             <button onClick={() => setShowUploadModal(false)} className="text-muted-foreground hover:text-foreground">
