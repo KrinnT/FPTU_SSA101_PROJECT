@@ -2,12 +2,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  compress: true, // Enable Gzip/Brotli compression
+  compress: true,
   reactStrictMode: true,
-  poweredByHeader: false, // Security + bit less bytes
+  poweredByHeader: false,
+  // Ensure server-only Node.js packages are never bundled into client JS
+  serverExternalPackages: [
+    '@prisma/client',
+    '@neondatabase/serverless',
+    '@prisma/adapter-neon',
+    'prisma',
+  ],
   experimental: {
-    // reactCompiler: true, // Removed as it causes type error in this version
-    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'date-fns'], // Tree shake heavy libs
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'date-fns'],
   },
   async headers() {
     return [
