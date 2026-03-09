@@ -33,6 +33,11 @@ interface Material {
     semester: { id: string; name: string };
     subject: { id: string; code: string };
     uploadedBy: { id: string; name?: string };
+    files?: { id: string; name: string; type: string; fileUrl: string; size: number }[];
+}
+
+interface UploadFileWithPreview extends File {
+    previewUrl?: string;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -79,7 +84,7 @@ function ExamMaterialsContent() {
     const [uploadForm, setUploadForm] = useState({
         title: "", description: "", semesterId: "", subjectId: ""
     });
-    const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+    const [uploadFiles, setUploadFiles] = useState<UploadFileWithPreview[]>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<{ name: string; done: boolean; error?: string }[]>([]);
     const [uploadError, setUploadError] = useState("");
@@ -148,33 +153,32 @@ function ExamMaterialsContent() {
         setUploading(true);
         setUploadError("");
         setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: false })));
+        const form = new FormData();
+        form.append("title", uploadForm.title || uploadFiles[0].name.replace(/\.[^.]+$/, ""));
+        form.append("description", uploadForm.description);
+        form.append("semesterId", uploadForm.semesterId);
+        form.append("subjectId", uploadForm.subjectId);
+
+        uploadFiles.forEach(file => {
+            form.append("files", file);
+        });
 
         let anyFailed = false;
-        for (let i = 0; i < uploadFiles.length; i++) {
-            const file = uploadFiles[i];
-            try {
-                const form = new FormData();
-                form.append("file", file);
-                // Use filename (without extension) as title if no title provided
-                const title = uploadForm.title || file.name.replace(/\.[^.]+$/, "");
-                form.append("title", title);
-                form.append("description", uploadForm.description);
-                form.append("semesterId", uploadForm.semesterId);
-                form.append("subjectId", uploadForm.subjectId);
+        try {
+            const res = await fetch("/api/exam-materials", { method: "POST", body: form });
+            const data = await res.json();
 
-                const res = await fetch("/api/exam-materials", { method: "POST", body: form });
-                const data = await res.json();
-
-                setUploadProgress(prev => prev.map((p, idx) =>
-                    idx === i ? { ...p, done: true, error: res.ok ? undefined : (data.error || "Failed") } : p
-                ));
-                if (!res.ok) anyFailed = true;
-            } catch {
-                setUploadProgress(prev => prev.map((p, idx) =>
-                    idx === i ? { ...p, done: true, error: "Network error" } : p
-                ));
+            if (!res.ok) {
                 anyFailed = true;
+                setUploadError(data.error || "Failed");
+                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: data.error || "Failed" })));
+            } else {
+                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true })));
             }
+        } catch {
+            anyFailed = true;
+            setUploadError("Network error");
+            setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: "Network error" })));
         }
 
         setUploading(false);
@@ -182,6 +186,8 @@ function ExamMaterialsContent() {
             setTimeout(() => {
                 setShowUploadModal(false);
                 setUploadForm({ title: "", description: "", semesterId: "", subjectId: "" });
+                // Clean up preview URLs to avoid memory leaks
+                uploadFiles.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
                 setUploadFiles([]);
                 setUploadProgress([]);
                 fetchMaterials(1, true);
@@ -336,7 +342,7 @@ function ExamMaterialsContent() {
             {/* ── Upload Modal ── */}
             {showUploadModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl p-6 w-full max-w-md shadow-2xl border border-border/50 space-y-4">
+                    <div className="bg-card rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-border/50 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold">Upload Material</h2>
                             <button onClick={() => setShowUploadModal(false)} className="text-muted-foreground hover:text-foreground">
@@ -351,9 +357,9 @@ function ExamMaterialsContent() {
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <Label className="text-sm">Title <span className="text-red-400">*</span></Label>
+                                <Label className="text-sm">Title <span className="text-red-400">*</span> <span className="text-xs text-muted-foreground">(leave blank to use filename)</span></Label>
                                 <Input
                                     className="mt-1"
                                     placeholder="e.g. MAE101 Final Exam 2024"
@@ -393,46 +399,88 @@ function ExamMaterialsContent() {
                                     {uploadSubjects.map(s => <option key={s.id} value={s.id}>{s.code}</option>)}
                                 </select>
                             </div>
-                            <div>
-                                <Label className="text-sm">Files <span className="text-red-400">*</span> <span className="text-xs text-muted-foreground">(multiple allowed)</span></Label>
-                                <div
-                                    className={cn(
-                                        "mt-1 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors",
-                                        uploadFiles.length ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/20"
-                                    )}
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        multiple
-                                        className="hidden"
-                                        accept=".pdf,.docx,.doc,.pptx,.ppt,.zip,.png,.jpg,.jpeg"
-                                        onChange={e => setUploadFiles(Array.from(e.target.files ?? []))}
-                                    />
-                                    {uploadFiles.length > 0 ? (
-                                        <div className="space-y-1.5 text-left max-h-32 overflow-y-auto">
-                                            {uploadFiles.map((f, i) => {
-                                                const prog = uploadProgress[i];
-                                                return (
-                                                    <div key={i} className="flex items-center gap-2 text-xs">
-                                                        <span className={prog?.error ? "text-red-400" : prog?.done ? "text-green-400" : "text-primary"}>●</span>
-                                                        <span className="truncate flex-1">{f.name}</span>
-                                                        <span className="text-muted-foreground shrink-0">{formatSize(f.size)}</span>
-                                                        {prog?.error && <span className="text-red-400 shrink-0">✗</span>}
-                                                        {prog?.done && !prog.error && <span className="text-green-400 shrink-0">✓</span>}
+                        </div>
+                        <div>
+                            <Label className="text-sm">Files <span className="text-red-400">*</span> <span className="text-xs text-muted-foreground">(multiple allowed)</span></Label>
+                            <div
+                                className={cn(
+                                    "mt-1 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors",
+                                    uploadFiles.length ? "border-primary/50 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/20"
+                                )}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    className="hidden"
+                                    accept=".pdf,.docx,.doc,.pptx,.ppt,.zip,.png,.jpg,.jpeg"
+                                    onChange={e => {
+                                        const files = Array.from(e.target.files ?? []);
+                                        const processed = files.map(f => {
+                                            const file = f as UploadFileWithPreview;
+                                            if (file.type.startsWith('image/')) {
+                                                file.previewUrl = URL.createObjectURL(file);
+                                            }
+                                            return file;
+                                        });
+                                        setUploadFiles(prev => [...prev, ...processed]);
+                                    }}
+                                />
+                                {uploadFiles.length > 0 ? (
+                                    <div className="space-y-2 text-left max-h-48 overflow-y-auto">
+                                        {uploadFiles.map((f, i) => {
+                                            const prog = uploadProgress[i];
+                                            return (
+                                                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 border border-border/50">
+                                                    {f.previewUrl ? (
+                                                        <img src={f.previewUrl} alt={f.name} className="w-10 h-10 object-cover rounded shadow-sm" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 flex items-center justify-center bg-background rounded shadow-sm text-lg">
+                                                            {typeIcon(f.name.split('.').pop() || '📄')}
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 text-sm">
+                                                            <span className="truncate flex-1 font-medium">{f.name}</span>
+                                                            <span className="text-xs text-muted-foreground shrink-0">{formatSize(f.size)}</span>
+                                                        </div>
+                                                        <div className="text-xs flex items-center gap-1 mt-0.5">
+                                                            {prog ? (
+                                                                <>
+                                                                    {prog.error ? (
+                                                                        <span className="text-red-400 flex items-center gap-1"><X className="w-3 h-3" /> {prog.error}</span>
+                                                                    ) : prog.done ? (
+                                                                        <span className="text-green-400 flex items-center gap-1">✓ Uploaded</span>
+                                                                    ) : (
+                                                                        <span className="text-primary flex items-center gap-1"><span className="animate-pulse">●</span> Uploading...</span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+                                                                        setUploadFiles(prev => prev.filter((_, idx) => idx !== i));
+                                                                    }}
+                                                                    className="text-red-400 hover:text-red-300 transition-colors"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                                            <p className="text-sm text-muted-foreground">Click to choose one or more files</p>
-                                            <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PPTX, ZIP, PNG, JPG · max 10MB each</p>
-                                        </div>
-                                    )}
-                                </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                                        <p className="text-sm text-muted-foreground">Click to choose one or more files</p>
+                                        <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PPTX, ZIP, PNG, JPG · max 10MB each</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -458,13 +506,13 @@ function ExamMaterialsContent() {
                     <div className="bg-card rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-border/50">
                         <div className="flex items-center justify-between p-4 border-b border-border">
                             <div>
-                                <h2 className="font-bold">{previewMaterial.title}</h2>
+                                <h2 className="font-bold">{previewMaterial?.title}</h2>
                                 <p className="text-xs text-muted-foreground">
-                                    {previewMaterial.semester.name} · {previewMaterial.subject.code} · {formatSize(previewMaterial.size)}
+                                    {previewMaterial?.semester.name} · {previewMaterial?.subject.code} · {formatSize(previewMaterial?.size || 0)}
                                 </p>
                             </div>
                             <div className="flex gap-2">
-                                <Button size="sm" variant="secondary" onClick={() => handleDownload(previewMaterial)} className="gap-1">
+                                <Button size="sm" variant="secondary" onClick={() => handleDownload(previewMaterial!)} className="gap-1">
                                     <Download className="w-3 h-3" /> Download
                                 </Button>
                                 <button onClick={() => setPreviewMaterial(null)} className="text-muted-foreground hover:text-foreground">
@@ -472,23 +520,47 @@ function ExamMaterialsContent() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-auto p-4">
-                            {['PDF'].includes(previewMaterial.type.toUpperCase()) ? (
-                                <iframe
-                                    src={previewMaterial.fileUrl}
-                                    className="w-full h-full min-h-[500px] rounded"
-                                    title={previewMaterial.title}
-                                />
-                            ) : ['PNG', 'JPG', 'JPEG'].includes(previewMaterial.type.toUpperCase()) ? (
-                                <img src={previewMaterial.fileUrl} alt={previewMaterial.title} className="max-w-full mx-auto rounded" />
+                        <div className="flex-1 overflow-auto p-4 space-y-4">
+                            {previewMaterial?.files && previewMaterial.files.length > 0 ? (
+                                previewMaterial.files.map((file, idx) => (
+                                    <div key={file.id} className="w-full flex justify-center">
+                                        {['PDF'].includes(file.type.toUpperCase()) ? (
+                                            <iframe
+                                                src={file.fileUrl}
+                                                className="w-full h-[500px] rounded"
+                                                title={file.name}
+                                            />
+                                        ) : ['PNG', 'JPG', 'JPEG'].includes(file.type.toUpperCase()) ? (
+                                            <img src={file.fileUrl} alt={file.name} className="max-w-full rounded" />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3 w-full bg-muted/20 rounded">
+                                                <FileText className="w-12 h-12 opacity-30" />
+                                                <p>Preview not available for {file.type} files</p>
+                                                <Button size="sm" onClick={() => window.open(file.fileUrl, '_blank')} className="gap-1">
+                                                    <Download className="w-3 h-3" /> Download {file.name}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
-                                    <FileText className="w-12 h-12 opacity-30" />
-                                    <p>Preview not available for {previewMaterial.type} files</p>
-                                    <Button size="sm" onClick={() => handleDownload(previewMaterial)} className="gap-1">
-                                        <Download className="w-3 h-3" /> Download to view
-                                    </Button>
-                                </div>
+                                ['PDF'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
+                                    <iframe
+                                        src={previewMaterial.fileUrl!}
+                                        className="w-full h-full min-h-[500px] rounded"
+                                        title={previewMaterial.title}
+                                    />
+                                ) : ['PNG', 'JPG', 'JPEG'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
+                                    <img src={previewMaterial?.fileUrl!} alt={previewMaterial?.title} className="max-w-full mx-auto rounded" />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
+                                        <FileText className="w-12 h-12 opacity-30" />
+                                        <p>Preview not available for {previewMaterial?.type || "unknown"} files</p>
+                                        <Button size="sm" onClick={() => handleDownload(previewMaterial!)} className="gap-1">
+                                            <Download className="w-3 h-3" /> Download to view
+                                        </Button>
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>

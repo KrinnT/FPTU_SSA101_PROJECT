@@ -6,31 +6,54 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-        if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+        const fileId = searchParams.get('fileId');
+        if (!id && !fileId) return NextResponse.json({ error: "Missing id or fileId" }, { status: 400 });
 
-        const material = await prisma.material.findUnique({
-            where: { id },
-            select: { fileContent: true, title: true, type: true }
-        });
+        let fileContent = null;
+        let title = '';
+        let type = '';
 
-        if (!material || !material.fileContent) {
-            return NextResponse.json({ error: "File not found" }, { status: 404 });
+        if (fileId) {
+            const materialFile = await prisma.materialFile.findUnique({
+                where: { id: fileId },
+                select: { fileContent: true, name: true, type: true, materialId: true }
+            });
+            if (!materialFile) return NextResponse.json({ error: "File not found" }, { status: 404 });
+
+            fileContent = materialFile.fileContent;
+            title = materialFile.name.split('.')[0];
+            type = materialFile.type;
+
+            // Increment download counter safely (fire-and-forget)
+            prisma.material.update({ where: { id: materialFile.materialId }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
+        } else if (id) {
+            const material = await prisma.material.findUnique({
+                where: { id },
+                select: { fileContent: true, title: true, type: true }
+            });
+
+            if (!material || !material.fileContent) {
+                return NextResponse.json({ error: "File not found" }, { status: 404 });
+            }
+
+            fileContent = material.fileContent;
+            title = material.title;
+            type = material.type;
+
+            // Increment download counter safely (fire-and-forget)
+            prisma.material.update({ where: { id }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
         }
 
-        // Parse the data URL: data:mime;base64,xxxxx
-        const [header, base64Data] = material.fileContent.split(',');
+        const [header, base64Data] = fileContent!.split(',');
         const mimeMatch = header.match(/data:([^;]+)/);
         const mimeType = mimeMatch?.[1] || 'application/octet-stream';
 
         const buffer = Buffer.from(base64Data, 'base64');
 
-        // Increment download counter (fire-and-forget)
-        prisma.material.update({ where: { id }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
-
         return new NextResponse(buffer, {
             headers: {
                 'Content-Type': mimeType,
-                'Content-Disposition': `attachment; filename="${material.title}.${material.type.toLowerCase()}"`,
+                'Content-Disposition': `attachment; filename="${title}.${type.toLowerCase()}"`,
                 'Content-Length': String(buffer.length),
             }
         });
