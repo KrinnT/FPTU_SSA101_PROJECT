@@ -1,14 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 
+// Global singleton to reuse connection across hot-reloads in dev
+// In production (Neon serverless), the pooler URL ensures connection pooling
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const prisma =
     globalForPrisma.prisma ||
     new PrismaClient({
-        log: ["query"],
+        // Only log in development — query logging adds latency in production
+        log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
         datasources: {
             db: {
-                url: "postgresql://neondb_owner:npg_OQiSBHLd1s7a@ep-frosty-thunder-a1z54541-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+                // Always use env var — never hardcode credentials
+                url: process.env.DATABASE_URL,
             },
         },
     });

@@ -32,13 +32,17 @@ export async function GET(req: Request) {
                     subject: { select: { id: true, code: true } },
                     uploadedBy: { select: { id: true, name: true } },
                     files: { select: { id: true, name: true, type: true, fileUrl: true } },
-                    // DO NOT select fileContent here (too large)
                 }
             }),
             prisma.material.count({ where })
         ]);
 
-        return NextResponse.json({ materials, total, page, limit });
+        return NextResponse.json({ materials, total, page, limit }, {
+            headers: {
+                // Cache for 30s, serve stale for up to 60s while revalidating in background
+                'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+            }
+        });
     } catch (error) {
         console.error('[exam-materials GET]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -102,6 +106,7 @@ export async function POST(req: Request) {
             data: {
                 title,
                 description: description || null,
+                fileUrl: null, // will be updated after blob upload
                 size: totalSize,
                 type: primaryExt,
                 semesterId,
