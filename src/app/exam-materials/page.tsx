@@ -503,7 +503,7 @@ function ExamMaterialsContent() {
             {/* ── Preview Modal ── */}
             {previewMaterial && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-border/50">
+                    <div className="bg-card rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col border border-border/50">
                         <div className="flex items-center justify-between p-4 border-b border-border">
                             <div>
                                 <h2 className="font-bold">{previewMaterial?.title}</h2>
@@ -527,7 +527,7 @@ function ExamMaterialsContent() {
                                         {['PDF'].includes(file.type.toUpperCase()) ? (
                                             <iframe
                                                 src={file.fileUrl}
-                                                className="w-full h-[500px] rounded"
+                                                className="w-full h-[75vh] rounded"
                                                 title={file.name}
                                             />
                                         ) : ['PNG', 'JPG', 'JPEG'].includes(file.type.toUpperCase()) ? (
@@ -547,7 +547,7 @@ function ExamMaterialsContent() {
                                 ['PDF'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
                                     <iframe
                                         src={previewMaterial.fileUrl!}
-                                        className="w-full h-full min-h-[500px] rounded"
+                                        className="w-full h-full min-h-[75vh] rounded"
                                         title={previewMaterial.title}
                                     />
                                 ) : ['PNG', 'JPG', 'JPEG'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
