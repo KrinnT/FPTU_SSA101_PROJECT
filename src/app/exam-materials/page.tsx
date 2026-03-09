@@ -512,10 +512,7 @@ function ExamMaterialsContent() {
                                 </p>
                             </div>
                             <div className="flex gap-2">
-                                <Button size="sm" variant="secondary" onClick={() => handleDownload(previewMaterial!)} className="gap-1">
-                                    <Download className="w-3 h-3" /> Download
-                                </Button>
-                                <button onClick={() => setPreviewMaterial(null)} className="text-muted-foreground hover:text-foreground">
+                                <button onClick={() => setPreviewMaterial(null)} className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/30 transition-colors">
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
@@ -567,10 +564,18 @@ function ExamMaterialsContent() {
                         <div className="p-4 border-t border-border flex items-center justify-between gap-3 bg-card">
                             <p className="text-xs text-muted-foreground truncate">
                                 {previewMaterial?.files && previewMaterial.files.length > 1
-                                    ? `${previewMaterial.files.length} files in this document`
-                                    : (previewMaterial?.type || '')}
+                                    ? `${previewMaterial.files.length} files · click Download to save all`
+                                    : previewMaterial?.type || ''}
                             </p>
-                            <Button onClick={() => handleDownload(previewMaterial!)} className="gap-2 shrink-0">
+                            <Button
+                                onClick={() => {
+                                    const a = document.createElement('a');
+                                    a.href = `/api/exam-materials/file?id=${previewMaterial!.id}`;
+                                    a.download = previewMaterial!.title;
+                                    a.click();
+                                }}
+                                className="gap-2 shrink-0"
+                            >
                                 <Download className="w-4 h-4" /> Download
                             </Button>
                         </div>
