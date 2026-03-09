@@ -219,8 +219,8 @@ model Material {
   id             String         @id @default(cuid())
   title          String
   description    String?        @db.Text
-  fileUrl        String? // Access URL (data: URL served via route)
-  fileContent    String?        @db.Text // base64-encoded file content
+  fileUrl        String? // Public URL (Vercel Blob or legacy served route)
+  fileContent    String?        @db.Text // base64-encoded file content (legacy, new uploads use Blob)
   files          MaterialFile[]
   size           Int // in bytes
   type           String // Extension or MIME type
@@ -261,8 +261,8 @@ model MaterialFile {
   material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   name        String // Original filename
-  fileUrl     String // Access endpoint
-  fileContent String @db.Text // base64 data
+  fileUrl     String // Direct public URL (Vercel Blob) or served route
+  fileContent String? @db.Text // base64 data (legacy only)
   type        String // Extension
   size        Int // Bytes
 

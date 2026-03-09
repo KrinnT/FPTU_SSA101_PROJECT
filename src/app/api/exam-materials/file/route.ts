@@ -1,68 +1,113 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "@/lib/prisma";
 
-// GET: Serve the base64 file content stored in DB
+// GET: Serve file — redirects to Vercel Blob URL (new) or serves base64 (legacy)
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
         const fileId = searchParams.get('fileId');
+        const forceDownload = searchParams.get('download') === '1';
+
         if (!id && !fileId) return NextResponse.json({ error: "Missing id or fileId" }, { status: 400 });
 
-        let fileContent = null;
-        let title = '';
-        let type = '';
-
+        // ── Case 1: serve by MaterialFile ID ──────────────────────────────
         if (fileId) {
             const materialFile = await prisma.materialFile.findUnique({
                 where: { id: fileId },
-                select: { fileContent: true, name: true, type: true, materialId: true }
+                select: { fileUrl: true, fileContent: true, name: true, type: true, materialId: true }
             });
             if (!materialFile) return NextResponse.json({ error: "File not found" }, { status: 404 });
 
-            fileContent = materialFile.fileContent;
-            title = materialFile.name.split('.')[0];
-            type = materialFile.type;
-
-            // Increment download counter safely (fire-and-forget)
-            prisma.material.update({ where: { id: materialFile.materialId }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
-        } else if (id) {
-            const material = await prisma.material.findUnique({
-                where: { id },
-                select: { fileContent: true, title: true, type: true }
-            });
-
-            if (!material || !material.fileContent) {
-                return NextResponse.json({ error: "File not found" }, { status: 404 });
+            // Increment counter (fire-and-forget)
+            if (forceDownload) {
+                prisma.material.update({
+                    where: { id: materialFile.materialId },
+                    data: { totalDownloads: { increment: 1 } }
+                }).catch(() => { });
             }
 
-            fileContent = material.fileContent;
-            title = material.title;
-            type = material.type;
+            // New file: has a direct Blob URL — redirect to CDN
+            if (materialFile.fileUrl && materialFile.fileUrl.startsWith('https://')) {
+                if (forceDownload) {
+                    // Proxy with attachment header so browser downloads
+                    const res = await fetch(materialFile.fileUrl);
+                    const buf = await res.arrayBuffer();
+                    return new NextResponse(buf, {
+                        headers: {
+                            'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream',
+                            'Content-Disposition': `attachment; filename="${materialFile.name}"`,
+                        }
+                    });
+                }
+                return NextResponse.redirect(materialFile.fileUrl);
+            }
 
-            // Increment download counter safely (fire-and-forget)
-            prisma.material.update({ where: { id }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
+            // Legacy file: decode base64
+            if (!materialFile.fileContent) return NextResponse.json({ error: "No file content" }, { status: 404 });
+            const [header, base64Data] = materialFile.fileContent.split(',');
+            const mimeType = header.match(/data:([^;]+)/)?.[1] || 'application/octet-stream';
+            const buffer = Buffer.from(base64Data, 'base64');
+            const disposition = forceDownload
+                ? `attachment; filename="${materialFile.name}"`
+                : `inline; filename="${materialFile.name}"`;
+            return new NextResponse(buffer, {
+                headers: {
+                    'Content-Type': mimeType,
+                    'Content-Disposition': disposition,
+                    'Content-Length': String(buffer.length),
+                    'Cache-Control': 'private, max-age=300',
+                }
+            });
         }
 
-        const [header, base64Data] = fileContent!.split(',');
-        const mimeMatch = header.match(/data:([^;]+)/);
-        const mimeType = mimeMatch?.[1] || 'application/octet-stream';
+        // ── Case 2: serve by Material ID (downloads all as primary file) ──
+        if (id) {
+            const material = await prisma.material.findUnique({
+                where: { id },
+                select: { fileUrl: true, fileContent: true, title: true, type: true, files: { select: { fileUrl: true, name: true, type: true }, take: 1 } }
+            });
+            if (!material) return NextResponse.json({ error: "File not found" }, { status: 404 });
 
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        const forceDownload = new URL(req.url).searchParams.get('download') === '1';
-        const disposition = forceDownload
-            ? `attachment; filename="${title}.${type.toLowerCase()}"`
-            : `inline; filename="${title}.${type.toLowerCase()}"`;
-
-        return new NextResponse(buffer, {
-            headers: {
-                'Content-Type': mimeType,
-                'Content-Disposition': disposition,
-                'Content-Length': String(buffer.length),
-                'Cache-Control': 'private, max-age=300',
+            if (forceDownload) {
+                prisma.material.update({ where: { id }, data: { totalDownloads: { increment: 1 } } }).catch(() => { });
             }
-        });
+
+            // Prefer first child file (new Blob URL)
+            const primaryFile = material.files[0];
+            if (primaryFile?.fileUrl?.startsWith('https://')) {
+                if (forceDownload) {
+                    const res = await fetch(primaryFile.fileUrl);
+                    const buf = await res.arrayBuffer();
+                    return new NextResponse(buf, {
+                        headers: {
+                            'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream',
+                            'Content-Disposition': `attachment; filename="${primaryFile.name}"`,
+                        }
+                    });
+                }
+                return NextResponse.redirect(primaryFile.fileUrl);
+            }
+
+            // Legacy base64 fallback
+            if (!material.fileContent) return NextResponse.json({ error: "File not found" }, { status: 404 });
+            const [header, base64Data] = material.fileContent.split(',');
+            const mimeType = header.match(/data:([^;]+)/)?.[1] || 'application/octet-stream';
+            const buffer = Buffer.from(base64Data, 'base64');
+            const disposition = forceDownload
+                ? `attachment; filename="${material.title}.${material.type?.toLowerCase()}"`
+                : `inline; filename="${material.title}.${material.type?.toLowerCase()}"`;
+            return new NextResponse(buffer, {
+                headers: {
+                    'Content-Type': mimeType,
+                    'Content-Disposition': disposition,
+                    'Content-Length': String(buffer.length),
+                    'Cache-Control': 'private, max-age=300',
+                }
+            });
+        }
+
+        return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     } catch (error) {
         console.error('[exam-materials/file]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
