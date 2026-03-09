@@ -570,7 +570,7 @@ function ExamMaterialsContent() {
                             <Button
                                 onClick={() => {
                                     const a = document.createElement('a');
-                                    a.href = `/api/exam-materials/file?id=${previewMaterial!.id}`;
+                                    a.href = `/api/exam-materials/file?id=${previewMaterial!.id}&download=1`;
                                     a.download = previewMaterial!.title;
                                     a.click();
                                 }}

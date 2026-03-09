@@ -50,11 +50,17 @@ export async function GET(req: Request) {
 
         const buffer = Buffer.from(base64Data, 'base64');
 
+        const forceDownload = new URL(req.url).searchParams.get('download') === '1';
+        const disposition = forceDownload
+            ? `attachment; filename="${title}.${type.toLowerCase()}"`
+            : `inline; filename="${title}.${type.toLowerCase()}"`;
+
         return new NextResponse(buffer, {
             headers: {
                 'Content-Type': mimeType,
-                'Content-Disposition': `attachment; filename="${title}.${type.toLowerCase()}"`,
+                'Content-Disposition': disposition,
                 'Content-Length': String(buffer.length),
+                'Cache-Control': 'private, max-age=300',
             }
         });
     } catch (error) {
