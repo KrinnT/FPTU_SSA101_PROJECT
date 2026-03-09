@@ -89,6 +89,7 @@ function ExamMaterialsContent() {
     const [uploadProgress, setUploadProgress] = useState<{ name: string; done: boolean; error?: string }[]>([]);
     const [uploadError, setUploadError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [previewFileIdx, setPreviewFileIdx] = useState(0);
 
     // Preview Modal
     const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
@@ -419,12 +420,14 @@ function ExamMaterialsContent() {
                                         const files = Array.from(e.target.files ?? []);
                                         const processed = files.map(f => {
                                             const file = f as UploadFileWithPreview;
-                                            if (file.type.startsWith('image/')) {
+                                            // Generate preview URL for images AND PDFs
+                                            if (file.type.startsWith('image/') || file.type === 'application/pdf') {
                                                 file.previewUrl = URL.createObjectURL(file);
                                             }
                                             return file;
                                         });
                                         setUploadFiles(prev => [...prev, ...processed]);
+                                        setPreviewFileIdx(0); // auto-show first file
                                     }}
                                 />
                                 {uploadFiles.length > 0 ? (
@@ -483,6 +486,51 @@ function ExamMaterialsContent() {
                                 )}
                             </div>
                         </div>
+
+                        {/* ── Instant Client-Side Preview ── */}
+                        {uploadFiles.length > 0 && uploadFiles[previewFileIdx]?.previewUrl && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-sm">Preview</Label>
+                                    {uploadFiles.length > 1 && (
+                                        <div className="flex gap-1">
+                                            {uploadFiles.map((f, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setPreviewFileIdx(i)}
+                                                    className={cn(
+                                                        "px-2 py-0.5 text-xs rounded-md border transition-colors",
+                                                        previewFileIdx === i
+                                                            ? "bg-primary text-primary-foreground border-primary"
+                                                            : "border-border text-muted-foreground hover:border-primary/50"
+                                                    )}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="rounded-xl overflow-hidden border border-border/50 bg-muted/10">
+                                    {uploadFiles[previewFileIdx].type === 'application/pdf' ? (
+                                        <iframe
+                                            src={uploadFiles[previewFileIdx].previewUrl}
+                                            className="w-full h-[50vh]"
+                                            title={uploadFiles[previewFileIdx].name}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={uploadFiles[previewFileIdx].previewUrl}
+                                            alt={uploadFiles[previewFileIdx].name}
+                                            className="max-w-full max-h-[50vh] mx-auto object-contain"
+                                        />
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground text-center">
+                                    {uploadFiles[previewFileIdx].name} · {formatSize(uploadFiles[previewFileIdx].size)}
+                                </p>
+                            </div>
+                        )}
 
                         <Button className="w-full gap-2" onClick={handleUpload} disabled={uploading || !uploadFiles.length}>
                             {uploading ? (
