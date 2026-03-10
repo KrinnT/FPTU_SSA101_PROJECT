@@ -64,6 +64,7 @@ function SchedulerContent() {
     const [includeWeekends, setIncludeWeekends] = useState(true);
     const [normalTask, setNormalTask] = useState({ name: "", duration: 1 });
     const [isLoading, setIsLoading] = useState(true);
+    const [repeatWeeks, setRepeatWeeks] = useState(4);
 
     // Load from DB
     useEffect(() => {
@@ -376,28 +377,33 @@ function SchedulerContent() {
         return targetDate;
     };
 
-    const calendarEvents = [
-        ...fixedEvents.map(fe => {
+    const calendarEvents: any[] = [];
+
+    for (let w = 0; w < repeatWeeks; w++) {
+        const weekOffset = w * 7 * 24 * 60 * 60 * 1000;
+
+        fixedEvents.forEach(fe => {
             const date = getNextDateForDay(fe.day);
             const [sH, sM] = fe.startTime.split(':').map(Number);
             const [eH, eM] = fe.endTime.split(':').map(Number);
 
-            const start = new Date(date);
+            const start = new Date(date.getTime() + weekOffset);
             start.setHours(sH, sM, 0, 0);
 
-            const end = new Date(date);
+            const end = new Date(date.getTime() + weekOffset);
             end.setHours(eH, eM, 0, 0);
 
-            return {
-                id: fe.id,
+            calendarEvents.push({
+                id: `${fe.id}-w${w}`,
                 title: fe.name,
                 start,
                 end,
                 isFixed: true,
                 resourceId: fe.id
-            };
-        }),
-        ...tasks.filter(t => t.assignedSlot).map(t => {
+            });
+        });
+
+        tasks.filter(t => t.assignedSlot).forEach(t => {
             const slot = t.assignedSlot!;
             const date = getNextDateForDay(slot.day);
 
@@ -409,23 +415,23 @@ function SchedulerContent() {
             const eH = Math.floor(endFloat);
             const eM = Math.round((endFloat - eH) * 60);
 
-            const start = new Date(date);
+            const start = new Date(date.getTime() + weekOffset);
             start.setHours(sH, sM, 0, 0);
 
-            const end = new Date(date);
+            const end = new Date(date.getTime() + weekOffset);
             end.setHours(eH, eM, 0, 0);
 
-            return {
-                id: t.id,
+            calendarEvents.push({
+                id: `${t.id}-w${w}`,
                 title: t.name,
                 start,
                 end,
                 isFixed: false,
                 resourceId: t.id,
                 taskId: t.id
-            };
-        })
-    ];
+            });
+        });
+    }
 
     const onEventDrop = async ({ event, start, end }: any) => {
         if (event.isFixed) return; // Cannot move fixed events via UI simply
@@ -510,7 +516,17 @@ function SchedulerContent() {
                         <h1 className="text-3xl font-bold tracking-tight">Smart Scheduler</h1>
                         <p className="text-muted-foreground">Auto-generate your perfect study week based on your free time.</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        <select
+                            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            value={repeatWeeks}
+                            onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+                        >
+                            <option value={1}>1 Week</option>
+                            <option value={2}>Repeat 2 Weeks</option>
+                            <option value={4}>Repeat 4 Weeks</option>
+                            <option value={8}>Repeat 8 Weeks</option>
+                        </select>
                         <Button variant="outline" onClick={async () => {
                             // Clear DB
                             await fetch("/api/scheduler", { method: "DELETE" });
@@ -519,10 +535,10 @@ function SchedulerContent() {
                             setTasks([]);
                             setGenerated(false);
                         }}>
-                            <RotateCcw className="w-4 h-4 mr-2" /> Reset View
+                            <RotateCcw className="w-4 h-4 mr-2" /> Reset
                         </Button>
                         <Button className="bg-primary" onClick={generateSchedule}>
-                            <Calendar className="w-4 h-4 mr-2" /> Generate Schedule
+                            <Calendar className="w-4 h-4 mr-2" /> Generate
                         </Button>
                     </div>
                 </div>
@@ -770,11 +786,6 @@ function SchedulerContent() {
                                             border-color: rgba(255,255,255,0.05);
                                             min-height: 900px;
                                         }
-                                        /* Hide Sunday (First column in default US locale) to show Mon-Sat */
-                                        .rbc-time-view .rbc-time-header-content > .rbc-row > .rbc-header:first-child,
-                                        .rbc-time-view .rbc-time-content > .rbc-day-slot:first-child {
-                                            display: none !important;
-                                        }
                                         .rbc-time-view {
                                             border-color: rgba(255,255,255,0.05);
                                             border-radius: 0.5rem;
@@ -880,6 +891,6 @@ function SchedulerContent() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
