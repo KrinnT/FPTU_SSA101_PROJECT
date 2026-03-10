@@ -357,7 +357,7 @@ function ExamMaterialsContent() {
             {/* ── Upload Modal ── */}
             {showUploadModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl p-6 w-full max-w-4xl shadow-2xl border border-border/50 space-y-4">
+                    <div className="bg-card rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-border/50 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-bold">Upload Material</h2>
                             <button onClick={() => setShowUploadModal(false)} className="text-muted-foreground hover:text-foreground">

@@ -784,24 +784,24 @@ function SchedulerContent() {
                             <CardContent className="flex-1 overflow-visible p-0 md:p-6 pb-6">
                                 <div className="h-[900px] w-full min-w-[600px] rounded-md overflow-hidden bg-background">
                                     <style>{`
-                                        /* Customizing Big Calendar for Dark Mode */
+                                        /* Customizing Big Calendar for Dark/Light Mode */
                                         .rbc-calendar {
                                             font-family: inherit;
-                                            color: var(--foreground);
-                                            border-color: rgba(255,255,255,0.05);
+                                            color: hsl(var(--foreground));
+                                            border-color: hsl(var(--border));
                                             min-height: 900px;
                                         }
                                         .rbc-time-view {
-                                            border-color: rgba(255,255,255,0.05);
+                                            border-color: hsl(var(--border));
                                             border-radius: 0.5rem;
                                             overflow: hidden;
                                             flex: 1;
                                         }
                                         .rbc-time-header-content {
-                                            border-left-color: rgba(255,255,255,0.05);
+                                            border-left-color: hsl(var(--border));
                                         }
                                         .rbc-header {
-                                            border-bottom-color: rgba(255,255,255,0.05);
+                                            border-bottom-color: hsl(var(--border));
                                             padding: 10px 0;
                                             font-weight: 600;
                                             font-size: 0.8rem;
@@ -809,16 +809,16 @@ function SchedulerContent() {
                                             letter-spacing: 0.05em;
                                         }
                                         .rbc-header + .rbc-header {
-                                            border-left-color: rgba(255,255,255,0.05);
+                                            border-left-color: hsl(var(--border));
                                         }
                                         .rbc-day-bg {
-                                            border-left-color: rgba(255,255,255,0.02);
+                                            border-left-color: hsl(var(--border) / 0.5);
                                         }
                                         .rbc-time-slot {
-                                            border-top: 1px dashed rgba(255,255,255,0.02);
+                                            border-top: 1px dashed hsl(var(--border) / 0.5);
                                         }
                                         .rbc-timeslot-group {
-                                            border-bottom-color: rgba(255,255,255,0.02);
+                                            border-bottom-color: hsl(var(--border) / 0.5);
                                             min-height: 50px; /* INCREASED FROM 40px to prevent squishing */
                                         }
                                         .rbc-event {
@@ -827,7 +827,7 @@ function SchedulerContent() {
                                             padding: 2px 5px;
                                         }
                                         .rbc-today {
-                                            background-color: rgba(255,255,255,0.03);
+                                            background-color: hsl(var(--primary) / 0.05);
                                         }
                                         .rbc-event-content {
                                             font-size: 0.75rem;
@@ -841,10 +841,10 @@ function SchedulerContent() {
                                             border-top: none;
                                         }
                                         .rbc-time-content > * + * > * {
-                                            border-left-color: rgba(255,255,255,0.02);
+                                            border-left-color: hsl(var(--border) / 0.5);
                                         }
                                         .rbc-time-gutter .rbc-timeslot-group {
-                                            border-right-color: rgba(255,255,255,0.02);
+                                            border-right-color: hsl(var(--border) / 0.5);
                                             border-bottom-color: transparent;
                                         }
                                         .rbc-label {
@@ -853,8 +853,8 @@ function SchedulerContent() {
                                             padding: 0 4px;
                                         }
                                         .rbc-toolbar button {
-                                            color: var(--foreground);
-                                            border-color: rgba(255,255,255,0.05);
+                                            color: hsl(var(--foreground));
+                                            border-color: hsl(var(--border));
                                         }
                                         .rbc-toolbar button:active,
                                         .rbc-toolbar button.rbc-active {
@@ -865,7 +865,7 @@ function SchedulerContent() {
                                             box-shadow: none;
                                         }
                                         .rbc-toolbar button:hover:not(.rbc-active) {
-                                            background-color: rgba(255,255,255,0.05);
+                                            background-color: hsl(var(--border));
                                         }
                                     `}</style>
                                     <DnDCalendar
