@@ -28,14 +28,20 @@ export function NudgeSystem() {
     const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(false);
     const [message, setMessage] = useState(MESSAGES[0]);
-    const [frequency, setFrequency] = useState(30); // minutes
+    const [frequency, setFrequency] = useState(15); // Default 15 minutes per user request
     const [showSettings, setShowSettings] = useState(false);
-    const [nextTime, setNextTime] = useState(Date.now() + 5000); // Start 5s after load for demo
+    const [nextTime, setNextTime] = useState(0);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+        setNextTime(Date.now() + frequency * 60 * 1000); // Initialize timer after hydration
+    }, []);
 
     useEffect(() => {
         const isAuthPage = ['/login', '/register', '/verify'].includes(pathname || '');
-        if (!user || isAuthPage) {
-            setIsVisible(false); // Hide immediately if logged out
+        if (!user || isAuthPage || !isClient || nextTime === 0) {
+            setIsVisible(false);
             return;
         }
 
@@ -47,7 +53,7 @@ export function NudgeSystem() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [nextTime, isVisible, user, pathname]);
+    }, [nextTime, isVisible, user, pathname, isClient]);
 
     const triggerNudge = () => {
         const randomMsg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
