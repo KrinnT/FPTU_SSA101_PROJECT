@@ -799,9 +799,11 @@ function SchedulerContent() {
                                         }
                                         .rbc-time-header-content {
                                             border-left-color: hsl(var(--border));
+                                            color: hsl(var(--foreground));
                                         }
                                         .rbc-header {
                                             border-bottom-color: hsl(var(--border));
+                                            color: hsl(var(--foreground));
                                             padding: 10px 0;
                                             font-weight: 600;
                                             font-size: 0.8rem;
