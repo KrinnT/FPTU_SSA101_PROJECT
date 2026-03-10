@@ -29,15 +29,15 @@ export async function CommunityPosts() {
         likedByUser: !!(post.postLikes && post.postLikes.length > 0),
         createdAt: post.createdAt.toISOString(),
         author: {
-            ...post.author,
-            name: post.author.name || "Anonymous"
+            ...(post.author || {}),
+            name: post.author?.name || "Anonymous"
         },
         comments: post.comments.map((c: any) => ({
             ...c,
             createdAt: c.createdAt.toISOString(),
             author: {
-                ...c.author,
-                name: c.author.name || "Anonymous"
+                ...(c.author || {}),
+                name: c.author?.name || "Anonymous"
             }
         }))
     }));
