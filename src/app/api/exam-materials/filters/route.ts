@@ -19,9 +19,7 @@ export async function GET() {
 
         return NextResponse.json(semesters);
     } catch (error) {
-        // TEMPORARY DEBUG: Return actual error to client to bypass Vercel log limits
-        const errMessage = error instanceof Error ? error.message : String(error);
-        const errStack = error instanceof Error ? error.stack : '';
-        return NextResponse.json({ error: "Internal Server Error", detail: errMessage, stack: errStack }, { status: 500 });
+        console.error('[exam-materials/filters GET ERROR]', error instanceof Error ? error.stack : error, JSON.stringify(error));
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
