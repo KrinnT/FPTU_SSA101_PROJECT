@@ -9,12 +9,9 @@ const getCachedFilters = unstable_cache(
             orderBy: { name: 'asc' },
             include: {
                 subjects: {
-                    orderBy: { code: 'asc' },
-                    select: { id: true, code: true }
+                    orderBy: { code: 'asc' }
                 }
-            },
-            // Only select what's needed
-            // (semester includes id, name by default)
+            }
         });
     },
     ['exam-filters'],
@@ -26,11 +23,7 @@ export async function GET() {
     try {
         const semesters = await getCachedFilters();
 
-        return NextResponse.json(semesters, {
-            headers: {
-                'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-            }
-        });
+        return NextResponse.json(semesters);
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

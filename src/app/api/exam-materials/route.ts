@@ -3,6 +3,8 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { put } from '@vercel/blob';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Fetch materials with optional filters
 export async function GET(req: Request) {
     try {
@@ -37,12 +39,7 @@ export async function GET(req: Request) {
             prisma.material.count({ where })
         ]);
 
-        return NextResponse.json({ materials, total, page, limit }, {
-            headers: {
-                // Cache for 30s, serve stale for up to 60s while revalidating in background
-                'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-            }
-        });
+        return NextResponse.json({ materials, total, page, limit });
     } catch (error) {
         console.error('[exam-materials GET]', error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
