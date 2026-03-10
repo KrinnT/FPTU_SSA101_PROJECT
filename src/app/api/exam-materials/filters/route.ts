@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { unstable_cache } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-// Cache semesters+subjects for 5 minutes — this data rarely changes
-const getCachedFilters = unstable_cache(
-    async () => {
-        return prisma.semester.findMany({
+// GET: Fetch all semesters with their subjects (for dropdowns)
+export async function GET() {
+    try {
+        const semesters = await prisma.semester.findMany({
             orderBy: { name: 'asc' },
             include: {
                 subjects: {
@@ -15,15 +16,6 @@ const getCachedFilters = unstable_cache(
                 }
             }
         });
-    },
-    ['exam-filters'],
-    { revalidate: 300 } // 5 minutes
-);
-
-// GET: Fetch all semesters with their subjects (for dropdowns)
-export async function GET() {
-    try {
-        const semesters = await getCachedFilters();
 
         return NextResponse.json(semesters);
     } catch (error) {

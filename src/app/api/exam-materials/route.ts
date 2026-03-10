@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET: Fetch materials with optional filters
 export async function GET(req: Request) {
