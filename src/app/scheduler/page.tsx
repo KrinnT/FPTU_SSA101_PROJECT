@@ -13,6 +13,10 @@ import ProtectedRoute from "@/components/layout/protected-route";
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
+// Configure moment to start week on Monday
+moment.updateLocale('en', {
+    week: { dow: 1 }
+});
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './rbc-dark.css'; // Dark mode overrides (must be AFTER library CSS)
@@ -516,17 +520,18 @@ function SchedulerContent() {
                         <h1 className="text-3xl font-bold tracking-tight">Smart Scheduler</h1>
                         <p className="text-muted-foreground">Auto-generate your perfect study week based on your free time.</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        <select
-                            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            value={repeatWeeks}
-                            onChange={(e) => setRepeatWeeks(Number(e.target.value))}
-                        >
-                            <option value={1}>1 Week</option>
-                            <option value={2}>Repeat 2 Weeks</option>
-                            <option value={4}>Repeat 4 Weeks</option>
-                            <option value={8}>Repeat 8 Weeks</option>
-                        </select>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center h-10 rounded-md border border-input bg-background/50 px-3 py-2 text-sm">
+                            <span className="text-muted-foreground mr-2 font-medium">Loop Weeks:</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={52}
+                                className="w-12 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-center text-foreground font-semibold"
+                                value={repeatWeeks}
+                                onChange={(e) => setRepeatWeeks(Math.max(1, parseInt(e.target.value) || 1))}
+                            />
+                        </div>
                         <Button variant="outline" onClick={async () => {
                             // Clear DB
                             await fetch("/api/scheduler", { method: "DELETE" });
