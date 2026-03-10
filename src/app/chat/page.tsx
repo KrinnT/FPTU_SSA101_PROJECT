@@ -324,12 +324,14 @@ function ChatContent() {
     };
 
     const resetChat = async () => {
+        try {
+            await fetch("/api/chat", { method: "DELETE" });
+        } catch (e) {
+            console.error("Failed to clear chat from DB:", e);
+        }
         const initialMsg: Message = { id: Date.now().toString(), role: "bot", text: "Chat history cleared. How can I help you now?", timestamp: new Date(), type: "normal" };
         setMessages([initialMsg]);
         setChatState(INITIAL_STATE);
-
-        // TODO: Ideally call an API to delete the chat conversation from DB if desired
-        // For now, this just resets the view.
     };
 
     if (isLoadingHistory) {
