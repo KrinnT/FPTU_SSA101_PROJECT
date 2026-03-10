@@ -770,6 +770,11 @@ function SchedulerContent() {
                                             border-color: rgba(255,255,255,0.05);
                                             min-height: 900px;
                                         }
+                                        /* Hide Sunday (First column in default US locale) to show Mon-Sat */
+                                        .rbc-time-view .rbc-time-header-content > .rbc-row > .rbc-header:first-child,
+                                        .rbc-time-view .rbc-time-content > .rbc-day-slot:first-child {
+                                            display: none !important;
+                                        }
                                         .rbc-time-view {
                                             border-color: rgba(255,255,255,0.05);
                                             border-radius: 0.5rem;
@@ -850,8 +855,8 @@ function SchedulerContent() {
                                     <DnDCalendar
                                         localizer={localizer}
                                         events={calendarEvents}
-                                        defaultView="work_week"
-                                        views={['work_week', 'week', 'day']}
+                                        defaultView="week"
+                                        views={['week', 'day']}
                                         step={15}
                                         timeslots={4}
                                         onEventDrop={onEventDrop}
