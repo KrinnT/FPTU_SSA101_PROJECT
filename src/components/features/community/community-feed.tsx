@@ -196,7 +196,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Create a supportive post</label>
                         <textarea
-                            className="w-full h-24 bg-black/20 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none resize-none"
+                            className="w-full h-24 bg-background/50 border border-input rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none resize-none"
                             placeholder="Share your thoughts, ask for advice, or vent safely..."
                             value={newPost}
                             onChange={(e) => setNewPost(e.target.value)}
@@ -205,7 +205,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
 
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                         <select
-                            className="bg-secondary/50 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                            className="bg-accent rounded-lg px-3 py-2 text-sm focus:outline-none border border-input"
                             value={postCategory}
                             onChange={(e) => setPostCategory(e.target.value)}
                         >

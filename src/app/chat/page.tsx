@@ -399,7 +399,7 @@ function ChatContent() {
                                     <div className={cn(
                                         "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
                                         msg.role === "user" ? "bg-primary text-primary-foreground" :
-                                            msg.type === "risk" ? "bg-red-500 text-white" : "bg-secondary text-secondary-foreground"
+                                            msg.type === "risk" ? "bg-red-500 text-primary-foreground" : "bg-secondary text-secondary-foreground"
                                     )}>
                                         {msg.role === "user" ? <User className="w-5 h-5" /> :
                                             msg.type === "risk" ? <PhoneCall className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
@@ -410,8 +410,8 @@ function ChatContent() {
                                             msg.role === "user"
                                                 ? "bg-primary/20 text-foreground rounded-tr-none border border-primary/20"
                                                 : msg.type === "risk"
-                                                    ? "bg-red-500/10 text-red-200 border border-red-500/50 rounded-tl-none"
-                                                    : "bg-white/50 dark:bg-white/10 backdrop-blur-md rounded-tl-none border border-white/20"
+                                                    ? "bg-red-500/10 text-red-600 dark:text-red-200 border border-red-500/50 rounded-tl-none"
+                                                    : "bg-black/5 dark:bg-white/10 backdrop-blur-md rounded-tl-none border border-black/10 dark:border-white/20"
                                         )}>
                                             <div className="prose dark:prose-invert prose-sm max-w-none break-words">
                                                 <ReactMarkdown
@@ -438,7 +438,7 @@ function ChatContent() {
                                     <div className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shrink-0">
                                         <Bot className="w-5 h-5" />
                                     </div>
-                                    <div className="bg-white/50 dark:bg-white/10 p-4 rounded-2xl rounded-tl-none border border-white/20 flex gap-1 items-center h-12">
+                                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-2xl rounded-tl-none border border-black/10 dark:border-white/20 flex gap-1 items-center h-12">
                                         <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" />
                                         <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce delay-100" />
                                         <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce delay-200" />
@@ -448,7 +448,7 @@ function ChatContent() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter className="p-4 border-t border-white/10 bg-white/5 relative z-10">
+                <CardFooter className="p-4 border-t border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 relative z-10">
                     <div className="flex w-full gap-2">
                         <input
                             className="flex h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"

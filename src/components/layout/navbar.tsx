@@ -58,19 +58,19 @@ export function Navbar() {
 
     return (
         <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] md:w-auto z-50">
-            <div className="flex items-center justify-between md:justify-center p-2 bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-full shadow-2xl gap-1 md:gap-1 overflow-x-auto no-scrollbar whitespace-nowrap">
+            <div className="flex items-center justify-between md:justify-center p-2 bg-background/80 backdrop-blur-xl border border-border/50 rounded-full shadow-2xl gap-1 md:gap-1 overflow-x-auto no-scrollbar whitespace-nowrap">
 
                 {/* Group 1: Psych */}
                 {psychItems.map((item) => <NavLink key={item.href} item={item} />)}
 
                 {/* Divider */}
-                <div className="h-5 w-px bg-gray-400 dark:bg-white/40 mx-2 self-center" />
+                <div className="h-5 w-px bg-border mx-2 self-center" />
 
                 {/* Group 2: Study */}
                 {studyItems.map((item) => <NavLink key={item.href} item={item} />)}
 
                 {/* Divider */}
-                <div className="h-5 w-px bg-gray-400 dark:bg-white/40 mx-2 self-center" />
+                <div className="h-5 w-px bg-border mx-2 self-center" />
 
                 {/* Group 3: Community & Auth */}
                 {commItems.map((item) => <NavLink key={item.href} item={item} />)}

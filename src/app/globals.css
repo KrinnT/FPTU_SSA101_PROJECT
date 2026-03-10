@@ -2,8 +2,10 @@
 
 :root {
   /* Light Mode - Calm & Airy */
-  --background: 210 40% 98%; /* #F8FAFC */
-  --foreground: 222 47% 11%; /* #0F172A */
+  --background: 210 40% 98%;
+  /* #F8FAFC */
+  --foreground: 222 47% 11%;
+  /* #0F172A */
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
@@ -11,16 +13,19 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 199 89% 48%; /* Sky 500 */
+  --primary: 199 89% 48%;
+  /* Sky 500 */
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 173 80% 40%; /* Teal 600 */
+  --secondary: 173 80% 40%;
+  /* Teal 600 */
   --secondary-foreground: 210 40% 98%;
 
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 199 89% 96%; /* Sky 50 */
+  --accent: 199 89% 96%;
+  /* Sky 50 */
   --accent-foreground: 222 47% 11%;
 
   --destructive: 0 84.2% 60.2%;
@@ -36,7 +41,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark Mode - Deep Ocean */
-    --background: 222 47% 11%; /* #0F172A */
+    --background: 222 47% 11%;
+    /* #0F172A */
     --foreground: 210 40% 98%;
 
     --card: 222 47% 11%;
@@ -96,6 +102,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground transition-colors duration-300;
   }
@@ -103,9 +110,10 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/10 dark:bg-black/20 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-xl;
+    @apply bg-black/5 dark:bg-black/20 backdrop-blur-lg border border-black/10 dark:border-white/10 shadow-xl;
   }
+
   .glass-button {
-    @apply bg-white/20 dark:bg-white/10 backdrop-blur-md hover:bg-white/30 dark:hover:bg-white/20 transition-all border border-white/20;
+    @apply bg-black/10 dark:bg-white/10 backdrop-blur-md hover:bg-black/20 dark:hover:bg-white/20 transition-all border border-black/10 dark:border-white/20;
   }
 }

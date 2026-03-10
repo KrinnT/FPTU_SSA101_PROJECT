@@ -33,7 +33,7 @@ export const PostItem = memo(({
     categories
 }: PostItemProps) => {
     return (
-        <Card className="glass-card hover:bg-white/5 transition-colors">
+        <Card className="glass-card transition-colors">
             <CardContent className="pt-6 space-y-3">
                 <div className="flex justify-between items-start">
                     <span className={cn(
@@ -60,7 +60,7 @@ export const PostItem = memo(({
                 <p className="text-base leading-relaxed whitespace-pre-wrap">{post.content}</p>
                 <p className="text-xs text-muted-foreground/50">Posted by Anonymous</p>
             </CardContent>
-            <CardFooter className="flex flex-col gap-2 border-t border-white/5 py-3">
+            <CardFooter className="flex flex-col gap-2 border-t border-border/20 py-3">
                 <div className="flex justify-between w-full text-sm text-muted-foreground">
                     <div className="flex gap-4">
                         <button onClick={() => onLike(post.id, likedByUser)} className="flex items-center gap-1 hover:text-rose-500 transition-colors">
@@ -74,9 +74,9 @@ export const PostItem = memo(({
 
                 {/* Replies Section */}
                 {post.comments && post.comments.length > 0 && (
-                    <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-white/10">
+                    <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-border/30">
                         {post.comments.map((reply: any) => (
-                            <div key={reply.id} className="bg-black/20 p-2 rounded text-sm space-y-1">
+                            <div key={reply.id} className="bg-secondary/10 p-2 rounded text-sm space-y-1">
                                 <div className="flex justify-between text-[10px] text-muted-foreground">
                                     <span>Anonymous</span>
                                     <span>{new Date(reply.createdAt).toLocaleDateString()}</span>
@@ -91,7 +91,7 @@ export const PostItem = memo(({
                 {isReplying && (
                     <div className="w-full flex gap-2 mt-2 animate-in slide-in-from-top-2">
                         <input
-                            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
+                            className="flex-1 bg-background/50 border border-input rounded px-3 py-2 text-sm focus:ring-primary focus:outline-none"
                             placeholder="Write a supportive reply..."
                             value={replyContent}
                             onChange={(e) => setReplyContent(e.target.value)}
