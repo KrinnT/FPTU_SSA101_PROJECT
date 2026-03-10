@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
         return NextResponse.json({ materials, total, page, limit });
     } catch (error) {
-        console.error('[exam-materials GET]', error);
+        console.error('[exam-materials GET ERROR]', error instanceof Error ? error.stack : error, JSON.stringify(error));
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

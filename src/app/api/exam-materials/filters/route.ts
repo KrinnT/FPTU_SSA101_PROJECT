@@ -27,7 +27,7 @@ export async function GET() {
 
         return NextResponse.json(semesters);
     } catch (error) {
-        console.error(error);
+        console.error('[exam-materials/filters GET ERROR]', error instanceof Error ? error.stack : error, JSON.stringify(error));
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
