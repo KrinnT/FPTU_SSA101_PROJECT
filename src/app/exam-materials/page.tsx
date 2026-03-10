@@ -101,9 +101,17 @@ function ExamMaterialsContent() {
     // ─── Data Fetching ──────────────────────────
     useEffect(() => {
         fetch("/api/exam-materials/filters")
-            .then(r => r.json()).then(setSemesters).catch(console.error);
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data)) setSemesters(data);
+                else console.error("Invalid filters data", data);
+            })
+            .catch(console.error);
+
         fetch("/api/auth/me")
-            .then(r => r.json()).then(d => d.user?.id && setCurrentUserId(d.user.id)).catch(console.error);
+            .then(r => r.json())
+            .then(d => d?.user?.id && setCurrentUserId(d.user.id))
+            .catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -122,8 +130,13 @@ function ExamMaterialsContent() {
             const res = await fetch(`/api/exam-materials?${params}`);
             const data = await res.json();
 
+            if (!res.ok || !data.materials) {
+                console.error("Failed to fetch materials", data);
+                return; // Prevent crashing by not updating state with invalid data
+            }
+
             setMaterials(prev => reset ? data.materials : [...prev, ...data.materials]);
-            setTotal(data.total);
+            setTotal(data.total || 0);
             setPage(p);
         } finally {
             setLoading(false);
@@ -132,8 +145,8 @@ function ExamMaterialsContent() {
     }
 
     // ─── Actions ────────────────────────────────
-    const availableSubjects = semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [];
-    const uploadSubjects = semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [];
+    const availableSubjects = Array.isArray(semesters) ? semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [] : [];
+    const uploadSubjects = Array.isArray(semesters) ? semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [] : [];
 
     async function handleDownload(material: Material) {
         // Open the file-serving route directly — it streams binary and increments counter
