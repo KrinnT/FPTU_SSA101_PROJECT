@@ -471,8 +471,6 @@ function SchedulerContent() {
             if (event.isFixed) {
                 removeFixed(event.resourceId);
             } else {
-                // removeTask expects a full Task object but we have the event
-                // Find the original task by taskId
                 const taskToDelete = tasks.find(t => t.id === event.taskId);
                 if (taskToDelete) {
                     removeTask(taskToDelete);
@@ -480,6 +478,37 @@ function SchedulerContent() {
             }
         }
     };
+
+    const onSelectSlot = ({ start, end }: any) => {
+        const h = start.getHours().toString().padStart(2, '0');
+        const m = start.getMinutes().toString().padStart(2, '0');
+        const eh = end.getHours().toString().padStart(2, '0');
+        const em = end.getMinutes().toString().padStart(2, '0');
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const day = days[start.getDay()];
+        
+        setNewEvent(prev => ({ 
+            ...prev, 
+            day, 
+            startTime: `${h}:${m}`, 
+            endTime: `${eh}:${em}` 
+        }));
+        
+        // Scroll to form if needed or just give feedback
+        const formElement = document.getElementById('fixed-schedule-form');
+        if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const CustomEvent = ({ event }: any) => (
+        <div className="flex flex-col h-full w-full overflow-hidden">
+            <div className="font-bold truncate text-[0.8rem] leading-tight">
+                {event.title}
+            </div>
+            <div className="text-[10px] opacity-80 leading-tight mt-0.5">
+                {moment(event.start).format('h:mm A')} - {moment(event.end).format('h:mm A')}
+            </div>
+        </div>
+    );
 
     // Calculate grouped tasks to avoid showing 7 tasks
     const everydayTaskGroups = Array.from(
@@ -552,7 +581,7 @@ function SchedulerContent() {
                     {/* INPUT COMBINED */}
                     <div className="space-y-6 lg:col-span-1">
                         {/* Fixed Events Input */}
-                        <Card className="glass-card">
+                        <Card className="glass-card" id="fixed-schedule-form">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-lg">1. Fixed Schedule</CardTitle>
                                 <CardDescription>Classes, Part-time jobs, etc.</CardDescription>
@@ -817,18 +846,23 @@ function SchedulerContent() {
                                             border-left-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                         }
                                         .rbc-time-slot {
-                                            border-top: 1px dashed color-mix(in srgb, hsl(var(--border)) 50%, transparent);
+                                            border-top: 1px dashed color-mix(in srgb, hsl(var(--border)) 30%, transparent);
                                         }
                                         .rbc-timeslot-group {
-                                            border-bottom-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
-                                            min-height: 60px; /* INCREASED from 50px to prevent squishing */
+                                            border-bottom-color: color-mix(in srgb, hsl(var(--border)) 30%, transparent);
+                                            min-height: 70px; /* INCREASED again to ensure 2 lines of text + time fits */
                                         }
                                         .rbc-event {
                                             border: none;
                                             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-                                            padding: 4px 8px;
+                                            padding: 0 !important; /* Managed by CustomEvent now */
                                             display: flex;
                                             flex-direction: column;
+                                            overflow: visible !important;
+                                        }
+                                        .rbc-event-content {
+                                            overflow: visible !important;
+                                            padding: 4px 8px;
                                         }
                                         .rbc-today {
                                             background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent);
@@ -888,12 +922,18 @@ function SchedulerContent() {
                                         resizable={false}
                                         draggableAccessor={(event: any) => !event.isFixed}
                                         onSelectEvent={onSelectEvent}
+                                        onSelectSlot={onSelectSlot}
+                                        selectable
+                                        components={{
+                                            event: CustomEvent
+                                        }}
                                         eventPropGetter={(event: any) => ({
                                             style: {
                                                 backgroundColor: event.isFixed ? '#f43f5e' : '#3b82f6', // rose-500 / blue-500
                                                 color: 'white',
                                                 borderRadius: '6px',
-                                                border: '1px solid rgba(255,255,255,0.2)'
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                padding: '2px 4px'
                                             }
                                         })}
                                         toolbar={true}

@@ -11,7 +11,7 @@
 
 .rbc-timeslot-group {
     border: none !important;
-    min-height: 60px !important; /* MATCH page.tsx */
+    min-height: 70px !important; /* MATCH page.tsx 70px */
 }
 
 .rbc-day-bg,
@@ -114,7 +114,8 @@
     border: none !important;
     border-radius: 6px !important;
     opacity: 0.95 !important;
-    padding: 2px 4px !important;
+    padding: 0 !important; /* CustomEvent handles padding */
+    overflow: visible !important;
 }
 
 .rbc-event:focus {
