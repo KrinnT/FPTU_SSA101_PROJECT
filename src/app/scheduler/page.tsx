@@ -504,9 +504,6 @@ function SchedulerContent() {
             <div className="font-bold truncate text-[0.8rem] leading-tight">
                 {event.title}
             </div>
-            <div className="text-[10px] opacity-80 leading-tight mt-0.5">
-                {moment(event.start).format('h:mm A')} - {moment(event.end).format('h:mm A')}
-            </div>
         </div>
     );
 
