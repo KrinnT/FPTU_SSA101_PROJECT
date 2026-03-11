@@ -20,7 +20,14 @@ export async function GET(req: Request) {
         const where: any = { status: 'APPROVED' };
         if (semesterId) where.semesterId = semesterId;
         if (subjectId) where.subjectId = subjectId;
-        if (search) where.title = { contains: search, mode: 'insensitive' };
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                { subject: { code: { contains: search, mode: 'insensitive' } } },
+                { semester: { name: { contains: search, mode: 'insensitive' } } },
+            ];
+        }
 
         const [materials, total] = await Promise.all([
             prisma.material.findMany({
