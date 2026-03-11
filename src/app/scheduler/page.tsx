@@ -821,19 +821,25 @@ function SchedulerContent() {
                                         }
                                         .rbc-timeslot-group {
                                             border-bottom-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
-                                            min-height: 50px; /* INCREASED FROM 40px to prevent squishing */
+                                            min-height: 60px; /* INCREASED from 50px to prevent squishing */
                                         }
                                         .rbc-event {
                                             border: none;
                                             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-                                            padding: 2px 5px;
+                                            padding: 4px 8px;
+                                            display: flex;
+                                            flex-direction: column;
                                         }
                                         .rbc-today {
                                             background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent);
                                         }
                                         .rbc-event-content {
-                                            font-size: 0.75rem;
-                                            font-weight: 500;
+                                            font-size: 0.85rem;
+                                            font-weight: 600;
+                                            line-height: 1.2;
+                                            word-break: break-word;
+                                            white-space: normal;
+                                            overflow: visible;
                                         }
                                         .rbc-current-time-indicator {
                                             background-color: hsl(var(--primary));
