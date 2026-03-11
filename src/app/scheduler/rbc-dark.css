@@ -148,3 +148,8 @@
 .rbc-off-range-bg {
     background: hsl(var(--muted) / 0.3) !important;
 }
+
+/* Hide default RBC time label in events */
+.rbc-event-label {
+    display: none !important;
+}

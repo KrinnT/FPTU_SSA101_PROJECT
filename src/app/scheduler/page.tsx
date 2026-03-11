@@ -504,6 +504,9 @@ function SchedulerContent() {
             <div className="font-bold truncate text-[0.8rem] leading-tight">
                 {event.title}
             </div>
+            <div className="text-[10px] opacity-80 leading-tight mt-1">
+                {moment(event.start).format('h:mm A')} - {moment(event.end).format('h:mm A')}
+            </div>
         </div>
     );
 
@@ -860,6 +863,9 @@ function SchedulerContent() {
                                         .rbc-event-content {
                                             overflow: visible !important;
                                             padding: 4px 8px;
+                                        }
+                                        .rbc-event-label {
+                                            display: none !important;
                                         }
                                         .rbc-today {
                                             background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent);
