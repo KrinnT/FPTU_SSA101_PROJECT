@@ -150,7 +150,11 @@ function ExamMaterialsContent() {
             ? semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [] 
             : semesters.flatMap(s => s.subjects))
         : [];
-    const uploadSubjects = Array.isArray(semesters) ? semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [] : [];
+    const uploadSubjects = Array.isArray(semesters) 
+        ? (uploadForm.semesterId 
+            ? semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [] 
+            : semesters.flatMap(s => s.subjects))
+        : [];
 
     async function handleDownload(material: Material) {
         // Open the file-serving route directly — it streams binary and increments counter
@@ -189,15 +193,16 @@ function ExamMaterialsContent() {
 
             if (!res.ok) {
                 anyFailed = true;
-                setUploadError(data.error || "Failed");
-                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: data.error || "Failed" })));
+                setUploadError(data.error || `Failed (${res.status})`);
+                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: data.error || `Failed (${res.status})` })));
             } else {
                 setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true })));
             }
-        } catch {
+        } catch (err) {
             anyFailed = true;
-            setUploadError("Network error");
-            setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: "Network error" })));
+            const msg = err instanceof Error ? err.message : "Network error";
+            setUploadError(msg);
+            setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: msg })));
         }
 
         setUploading(false);
@@ -415,7 +420,7 @@ function ExamMaterialsContent() {
                                     className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                     value={uploadForm.subjectId}
                                     onChange={e => setUploadForm({ ...uploadForm, subjectId: e.target.value })}
-                                    disabled={!uploadForm.semesterId}
+                                    // disabled={!uploadForm.semesterId}
                                 >
                                     <option value="">Select Subject</option>
                                     {uploadSubjects.map(s => <option key={s.id} value={s.id}>{s.code}</option>)}
