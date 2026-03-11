@@ -261,7 +261,7 @@ function ExamMaterialsContent() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 className="pl-9"
-                                placeholder="Title..."
+                                placeholder="Search by title, subject code, or semester..."
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
                                 onKeyDown={e => e.key === "Enter" && setSearch(searchInput)}
