@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
+import { upload } from '@vercel/blob/client';
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface Semester {
@@ -176,33 +177,61 @@ function ExamMaterialsContent() {
         setUploading(true);
         setUploadError("");
         setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: false })));
-        const form = new FormData();
-        form.append("title", uploadForm.title || uploadFiles[0].name.replace(/\.[^.]+$/, ""));
-        form.append("description", uploadForm.description);
-        form.append("semesterId", uploadForm.semesterId);
-        form.append("subjectId", uploadForm.subjectId);
 
-        uploadFiles.forEach(file => {
-            form.append("files", file);
-        });
-
+        const uploadedResults: { url: string; name: string; size: number }[] = [];
         let anyFailed = false;
-        try {
-            const res = await fetch("/api/exam-materials", { method: "POST", body: form });
-            const data = await res.json();
 
-            if (!res.ok) {
-                anyFailed = true;
-                setUploadError(data.error || `Failed (${res.status})`);
-                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: data.error || `Failed (${res.status})` })));
-            } else {
-                setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true })));
+        try {
+            // Step 1: Upload each file to Vercel Blob from the client
+            for (let i = 0; i < uploadFiles.length; i++) {
+                const file = uploadFiles[i];
+                try {
+                    const blob = await upload(`exam-materials/${file.name}`, file, {
+                        access: 'public',
+                        handleUploadUrl: '/api/exam-materials/upload',
+                    });
+                    uploadedResults.push({
+                        url: blob.url,
+                        name: file.name,
+                        size: file.size,
+                    });
+                    setUploadProgress(prev => {
+                        const next = [...prev];
+                        next[i] = { ...next[i], done: true };
+                        return next;
+                    });
+                } catch (err) {
+                    anyFailed = true;
+                    const msg = err instanceof Error ? err.message : "Upload failed";
+                    setUploadProgress(prev => {
+                        const next = [...prev];
+                        next[i] = { ...next[i], done: true, error: msg };
+                        return next;
+                    });
+                }
+            }
+
+            if (uploadedResults.length > 0) {
+                // Step 2: Send metadata to our API to save in the database
+                const form = new FormData();
+                form.append("title", uploadForm.title || uploadFiles[0].name.replace(/\.[^.]+$/, ""));
+                form.append("description", uploadForm.description);
+                form.append("semesterId", uploadForm.semesterId);
+                form.append("subjectId", uploadForm.subjectId);
+                form.append("uploadedFiles", JSON.stringify(uploadedResults));
+
+                const res = await fetch("/api/exam-materials", { method: "POST", body: form });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    anyFailed = true;
+                    setUploadError(data.error || `DB save failed (${res.status})`);
+                }
             }
         } catch (err) {
             anyFailed = true;
             const msg = err instanceof Error ? err.message : "Network error";
             setUploadError(msg);
-            setUploadProgress(uploadFiles.map(f => ({ name: f.name, done: true, error: msg })));
         }
 
         setUploading(false);
@@ -210,7 +239,7 @@ function ExamMaterialsContent() {
             setTimeout(() => {
                 setShowUploadModal(false);
                 setUploadForm({ title: "", description: "", semesterId: "", subjectId: "" });
-                // Clean up preview URLs to avoid memory leaks
+                // Clean up preview URLs
                 uploadFiles.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
                 setUploadFiles([]);
                 setUploadProgress([]);

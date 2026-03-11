@@ -63,57 +63,94 @@ export async function POST(req: Request) {
         }
 
         const formData = await req.formData();
-        const files = formData.getAll('files') as File[];
         const title = formData.get('title') as string;
         const description = formData.get('description') as string;
         const semesterId = formData.get('semesterId') as string;
         const subjectId = formData.get('subjectId') as string;
-
-        if (!files || files.length === 0 || !title || !semesterId || !subjectId) {
-            return NextResponse.json({ error: "Missing required fields (title, semester, subject, files)" }, { status: 400 });
+        
+        // Handle both direct file upload (old) and client-side upload metadata (new)
+        const files = formData.getAll('files') as File[];
+        const uploadedFilesJson = formData.get('uploadedFiles') as string;
+        
+        if (!title || !semesterId || !subjectId) {
+            return NextResponse.json({ error: "Missing required fields (title, semester, subject)" }, { status: 400 });
         }
 
-        const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.vbs', '.msi', '.dll'];
-        const allowedExtensions = ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.zip', '.png', '.jpg', '.jpeg'];
-        const MAX_SIZE = 10 * 1024 * 1024; // 10MB limit per file
+        let materialFiles: { url: string; name: string; size: number }[] = [];
 
-        const mimeMap: Record<string, string> = {
-            pdf: 'application/pdf',
-            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            doc: 'application/msword',
-            pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            ppt: 'application/vnd.ms-powerpoint',
-            zip: 'application/zip',
-            png: 'image/png',
-            jpg: 'image/jpeg',
-            jpeg: 'image/jpeg',
-        };
+        if (uploadedFilesJson) {
+            // New way: Client uploaded directly to Blob and sent us URLs
+            try {
+                materialFiles = JSON.parse(uploadedFilesJson);
+            } catch (e) {
+                return NextResponse.json({ error: "Invalid uploadedFiles data" }, { status: 400 });
+            }
+        } else if (files && files.length > 0) {
+            // Old way: Files sent to our server (limited to 4.5MB by Vercel)
+            const blockedExtensions = ['.exe', '.sh', '.bat', '.cmd', '.ps1', '.vbs', '.msi', '.dll'];
+            const allowedExtensions = ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.zip', '.png', '.jpg', '.jpeg'];
+            const MAX_SIZE = 4.5 * 1024 * 1024; // Lowered to 4.5MB to match Vercel hobby limit for server-side
 
-        // Validate all files first before uploading
-        for (const file of files) {
-            const fileName = file.name.toLowerCase();
-            if (blockedExtensions.some(ext => fileName.endsWith(ext))) {
-                return NextResponse.json({ error: `File type not allowed: ${fileName}` }, { status: 400 });
+            const mimeMap: Record<string, string> = {
+                pdf: 'application/pdf',
+                docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                doc: 'application/msword',
+                pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                ppt: 'application/vnd.ms-powerpoint',
+                zip: 'application/zip',
+                png: 'image/png',
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+            };
+
+            for (const file of files) {
+                const fileName = file.name.toLowerCase();
+                if (blockedExtensions.some(ext => fileName.endsWith(ext))) {
+                    return NextResponse.json({ error: `File type not allowed: ${fileName}` }, { status: 400 });
+                }
+                if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
+                    return NextResponse.json({ error: `Only PDF, DOCX, PPTX, ZIP, PNG, JPG files are allowed: ${fileName}` }, { status: 400 });
+                }
+                if (file.size > MAX_SIZE) {
+                    return NextResponse.json({ error: `File too large for direct upload (${(file.size / 1024 / 1024).toFixed(1)}MB). Vercel limits direct uploads to 4.5MB. Please try again with client-side upload.` }, { status: 400 });
+                }
             }
-            if (!allowedExtensions.some(ext => fileName.endsWith(ext))) {
-                return NextResponse.json({ error: `Only PDF, DOCX, PPTX, ZIP, PNG, JPG files are allowed: ${fileName}` }, { status: 400 });
-            }
-            if (file.size > MAX_SIZE) {
-                return NextResponse.json({ error: `File too large (max 10MB): ${fileName}` }, { status: 400 });
-            }
+
+            // Upload files to Blob if they came to the server
+            const uploadResults = await Promise.all(files.map(async (file) => {
+                const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+                const contentType = mimeMap[ext] || 'application/octet-stream';
+
+                if (!process.env.BLOB_READ_WRITE_TOKEN) {
+                    console.error('[exam-materials POST] BLOB_READ_WRITE_TOKEN is missing');
+                    throw new Error("Storage configuration error (BLOB TOKEN MISSING)");
+                }
+
+                const blob = await put(`exam-materials/temp/${Date.now()}-${file.name}`, file, {
+                    access: 'public',
+                    contentType,
+                });
+                
+                return { url: blob.url, name: file.name, size: file.size };
+            }));
+            materialFiles = uploadResults;
         }
 
-        const primaryExt = files.length > 1 ? 'MULTIPLE' : files[0].name.split('.').pop()?.toUpperCase() || 'UNKNOWN';
-        const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+        if (materialFiles.length === 0) {
+            return NextResponse.json({ error: "No files provided" }, { status: 400 });
+        }
 
-        // Create parent Material record first (no fileContent for new uploads)
+        const totalSize = materialFiles.reduce((acc, f) => acc + f.size, 0);
+        const primaryExt = materialFiles[0].name.split('.').pop()?.toUpperCase() || 'UNKNOWN';
+
+        // Create the Material record
         const material = await prisma.material.create({
             data: {
                 title,
                 description: description || null,
-                fileUrl: null, // will be updated after blob upload
+                fileUrl: materialFiles[0].url,
                 size: totalSize,
-                type: primaryExt,
+                type: materialFiles.length > 1 ? 'MULTIPLE' : primaryExt,
                 semesterId,
                 subjectId,
                 uploadedById: session.user.id,
@@ -121,38 +158,18 @@ export async function POST(req: Request) {
             }
         });
 
-        // Upload each file to Vercel Blob and create MaterialFile records
-        const fileRecords = await Promise.all(files.map(async (file) => {
-            const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
-            const contentType = mimeMap[ext] || 'application/octet-stream';
-            const blobPath = `exam-materials/${material.id}/${Date.now()}-${file.name}`;
-
-            if (!process.env.BLOB_READ_WRITE_TOKEN) {
-                console.error('[exam-materials POST] BLOB_READ_WRITE_TOKEN is missing');
-                throw new Error("Storage configuration error (BLOB TOKEN MISSING)");
-            }
-
-            const blob = await put(blobPath, file, {
-                access: 'public',
-                contentType,
-            });
-
-            return prisma.materialFile.create({
+        // Create MaterialFile records
+        await Promise.all(materialFiles.map((file) => 
+            prisma.materialFile.create({
                 data: {
                     materialId: material.id,
                     name: file.name,
-                    fileUrl: blob.url,
-                    type: ext.toUpperCase(),
+                    fileUrl: file.url,
+                    type: file.name.split('.').pop()?.toUpperCase() || 'BIN',
                     size: file.size,
                 }
-            });
-        }));
-
-        // Set the primary fileUrl to the first file's Blob URL
-        await prisma.material.update({
-            where: { id: material.id },
-            data: { fileUrl: fileRecords[0]?.fileUrl || null }
-        });
+            })
+        ));
 
         return NextResponse.json({
             id: material.id,
