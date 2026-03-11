@@ -127,6 +127,11 @@ export async function POST(req: Request) {
             const contentType = mimeMap[ext] || 'application/octet-stream';
             const blobPath = `exam-materials/${material.id}/${Date.now()}-${file.name}`;
 
+            if (!process.env.BLOB_READ_WRITE_TOKEN) {
+                console.error('[exam-materials POST] BLOB_READ_WRITE_TOKEN is missing');
+                throw new Error("Storage configuration error (BLOB TOKEN MISSING)");
+            }
+
             const blob = await put(blobPath, file, {
                 access: 'public',
                 contentType,
@@ -158,6 +163,7 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         console.error('[exam-materials POST]', error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
