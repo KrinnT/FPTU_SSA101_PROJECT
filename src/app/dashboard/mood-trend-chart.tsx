@@ -35,8 +35,8 @@ export default function MoodTrendChart({ history, onAddCheckIn }: MoodTrendChart
                 <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis domain={[0, 6]} hide />
                 <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--color-card)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: 'var(--color-foreground)' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                 />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                 <Area

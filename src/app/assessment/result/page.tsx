@@ -152,7 +152,7 @@ function ResultContent() {
                                 <YAxis dataKey="name" type="category" width={80} tick={{ fill: 'currentColor' }} />
                                 <Tooltip
                                     cursor={{ fill: 'transparent' }}
-                                    contentStyle={{ backgroundColor: 'var(--color-card)', borderRadius: '8px', border: 'none' }}
+                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '8px', border: 'none' }}
                                 />
                                 <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={32}>
                                     {data.map((entry, index) => (

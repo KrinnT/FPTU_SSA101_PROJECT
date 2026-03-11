@@ -814,13 +814,13 @@ function SchedulerContent() {
                                             border-left-color: hsl(var(--border));
                                         }
                                         .rbc-day-bg {
-                                            border-left-color: hsl(var(--border) / 0.5);
+                                            border-left-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                         }
                                         .rbc-time-slot {
-                                            border-top: 1px dashed hsl(var(--border) / 0.5);
+                                            border-top: 1px dashed color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                         }
                                         .rbc-timeslot-group {
-                                            border-bottom-color: hsl(var(--border) / 0.5);
+                                            border-bottom-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                             min-height: 50px; /* INCREASED FROM 40px to prevent squishing */
                                         }
                                         .rbc-event {
@@ -829,7 +829,7 @@ function SchedulerContent() {
                                             padding: 2px 5px;
                                         }
                                         .rbc-today {
-                                            background-color: hsl(var(--primary) / 0.05);
+                                            background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent);
                                         }
                                         .rbc-event-content {
                                             font-size: 0.75rem;
@@ -843,10 +843,10 @@ function SchedulerContent() {
                                             border-top: none;
                                         }
                                         .rbc-time-content > * + * > * {
-                                            border-left-color: hsl(var(--border) / 0.5);
+                                            border-left-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                         }
                                         .rbc-time-gutter .rbc-timeslot-group {
-                                            border-right-color: hsl(var(--border) / 0.5);
+                                            border-right-color: color-mix(in srgb, hsl(var(--border)) 50%, transparent);
                                             border-bottom-color: transparent;
                                         }
                                         .rbc-label {
