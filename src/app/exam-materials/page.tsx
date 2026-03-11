@@ -145,7 +145,11 @@ function ExamMaterialsContent() {
     }
 
     // ─── Actions ────────────────────────────────
-    const availableSubjects = Array.isArray(semesters) ? semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [] : [];
+    const availableSubjects = Array.isArray(semesters) 
+        ? (selectedSemesterId 
+            ? semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [] 
+            : semesters.flatMap(s => s.subjects))
+        : [];
     const uploadSubjects = Array.isArray(semesters) ? semesters.find(s => s.id === uploadForm.semesterId)?.subjects ?? [] : [];
 
     async function handleDownload(material: Material) {
@@ -289,7 +293,7 @@ function ExamMaterialsContent() {
                             className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                             value={selectedSubjectId}
                             onChange={e => setSelectedSubjectId(e.target.value)}
-                            disabled={!selectedSemesterId}
+                            // disabled={!selectedSemesterId}
                         >
                             <option value="">All Subjects</option>
                             {availableSubjects.map(s => <option key={s.id} value={s.id}>{s.code}</option>)}
@@ -323,7 +327,10 @@ function ExamMaterialsContent() {
                     <div className="text-center py-24 text-muted-foreground">
                         <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
                         <p className="text-lg font-medium">No materials found</p>
-                        <p className="text-sm mt-1">Try adjusting your filters or upload the first one!</p>
+                        <p className="text-sm mt-1">
+                            Current database has <b>{semesters.length} Semesters</b> and <b>{semesters.reduce((acc, s) => acc + (s.subjects?.length || 0), 0)} Subjects</b> ready for use.
+                        </p>
+                        <p className="text-xs mt-2 opacity-60">Try adjusting your filters or upload the first study material!</p>
                     </div>
                 ) : (
                     <>
