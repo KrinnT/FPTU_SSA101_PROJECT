@@ -810,7 +810,7 @@ function SchedulerContent() {
                                     </div>
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-1 overflow-visible p-0 md:p-6 pb-6">
+                            <CardContent className="flex-1 overflow-x-auto p-0 md:p-6 pb-6">
                                 <div className="h-[900px] w-full min-w-[600px] rounded-md overflow-hidden bg-background">
                                     <style>{`
                                         /* Customizing Big Calendar for Dark/Light Mode */
