@@ -78,7 +78,7 @@ function ExercisesContent() {
 
 
     // Diary Logic
-    const [diaryEntries, setDiaryEntries] = useState<any[]>([]);
+    const [diaryEntries, setDiaryEntries] = useState<{ date: string; trigger: string; thought: string; evidence: string; balanced: string }[]>([]);
 
     // Load diary on mount
     useEffect(() => {

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 interface MoodTrendChartProps {
-    history: any[];
+    history: { mood: number; focus: number; energy: number; emotion: string; date: string }[];
     onAddCheckIn: () => void;
 }
 

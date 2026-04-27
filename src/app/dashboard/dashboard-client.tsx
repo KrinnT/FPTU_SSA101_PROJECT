@@ -16,13 +16,13 @@ const MoodTrendChart = dynamic(() => import("./mood-trend-chart"), {
 });
 
 interface DashboardClientProps {
-    user: any;
-    initialHistory: any[];
-    assessmentData: any; // null if no assessment
+    user: { id: string; name: string | null; email: string };
+    initialHistory: { mood: number; focus: number; energy: number; emotion: string; date: string }[];
+    assessmentData: { scores: { Depression: number; Anxiety: number; Stress: number } } | null;
 }
 
 export default function DashboardClient({ user, initialHistory, assessmentData }: DashboardClientProps) {
-    const [history, setHistory] = useState<any[]>(initialHistory);
+    const [history, setHistory] = useState<{ mood: number; focus: number; energy: number; emotion: string; date: string }[]>(initialHistory);
     const [showCheckIn, setShowCheckIn] = useState(false);
 
     // New Check-in State

@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     }
 
     let assessmentData = null;
-    let history: any[] = [];
+    let history: { mood: number; focus: number; energy: number; emotion: string; date: string; createdAt?: string }[] = [];
 
     try {
         // 2. Parallel Data Fetching
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
         }
 
         // Mood History (Reverse: Oldest -> Newest for Chart)
-        history = moodLogs.reverse().map((log: any) => ({
+        history = moodLogs.reverse().map((log) => ({
             ...log,
             mood: Number(log.mood),
             focus: Number(log.focus),
