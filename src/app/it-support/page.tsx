@@ -20,7 +20,7 @@ const askGemini = async (prompt: string) => {
     }
   };
 
-  const fetchWithRetry: any = async (retries = 5, delay = 1000) => {
+  const fetchWithRetry = async (retries = 5, delay = 1000): Promise<string> => {
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -30,12 +30,16 @@ const askGemini = async (prompt: string) => {
       if (!response.ok) throw new Error(`Lỗi API: ${response.status}`);
       const data = await response.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || "Không có phản hồi từ AI.";
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (retries > 0) {
         await new Promise(res => setTimeout(res, delay));
         return fetchWithRetry(retries - 1, delay * 2);
       }
-      throw new Error(error.message || "Lỗi kết nối AI sau nhiều lần thử. Vui lòng thử lại sau.");
+      if (error instanceof Error) {
+        throw new Error(error.message || "Lỗi kết nối AI sau nhiều lần thử. Vui lòng thử lại sau.");
+      } else {
+        throw new Error("Lỗi kết nối AI sau nhiều lần thử. Vui lòng thử lại sau.");
+      }
     }
   };
   return fetchWithRetry();
@@ -57,8 +61,12 @@ const AiTutor = ({ context }: { context: string }) => {
     try {
       const res = await askGemini(context);
       setResponse(res);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -110,8 +118,17 @@ const AiTutor = ({ context }: { context: string }) => {
 // ==========================================
 // THUẬT TOÁN SẮP XẾP VÀ TÌM KIẾM
 // ==========================================
+interface Frame {
+  type: string;
+  indices?: number[];
+  arr?: number[];
+  msg?: string;
+  index?: number;
+  range?: number[];
+}
+
 const generateBubbleSortFrames = (arr: number[]) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let tempArr = [...arr];
   for (let i = 0; i < tempArr.length; i++) {
     for (let j = 0; j < tempArr.length - i - 1; j++) {
@@ -130,7 +147,7 @@ const generateBubbleSortFrames = (arr: number[]) => {
 };
 
 const generateSelectionSortFrames = (arr: number[]) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let tempArr = [...arr];
   for(let i=0; i<tempArr.length; i++) {
     let minIdx = i;
@@ -154,7 +171,7 @@ const generateSelectionSortFrames = (arr: number[]) => {
 };
 
 const generateInsertionSortFrames = (arr: number[]) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let tempArr = [...arr];
   frames.push({ type: 'sorted', index: 0, msg: `Giả sử phần tử đầu tiên đã được sắp xếp.` });
   for(let i=1; i<tempArr.length; i++) {
@@ -175,7 +192,7 @@ const generateInsertionSortFrames = (arr: number[]) => {
 };
 
 const generateMergeSortFrames = (arr: number[]) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let tempArr = [...arr];
   
   const merge = (l: number, m: number, r: number) => {
@@ -228,7 +245,7 @@ const generateMergeSortFrames = (arr: number[]) => {
 };
 
 const generateQuickSortFrames = (arr: number[]) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let tempArr = [...arr];
 
   const partition = (low: number, high: number) => {
@@ -269,7 +286,7 @@ const generateQuickSortFrames = (arr: number[]) => {
 };
 
 const generateLinearSearchFrames = (arr: number[], target: number) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   for (let i = 0; i < arr.length; i++) {
     frames.push({ type: 'compare', indices: [i], arr: [...arr], msg: `Lần lặp ${i}: So sánh A[${i}] = ${arr[i]} với Target = ${target}` });
     if (arr[i] === target) {
@@ -282,7 +299,7 @@ const generateLinearSearchFrames = (arr: number[], target: number) => {
 };
 
 const generateBinarySearchFrames = (arr: number[], target: number) => {
-  let frames: any[] = [];
+  let frames: Frame[] = [];
   let left = 0;
   let right = arr.length - 1;
 
@@ -346,7 +363,7 @@ const toggleBit = (bin: string, index: number) => {
 // ==========================================
 // UI COMPONENTS
 // ==========================================
-const BitArray = ({ binStr, onChange, colorClass = "bg-blue-600", readOnly = false }: { binStr: string, onChange?: any, colorClass?: string, readOnly?: boolean }) => (
+const BitArray = ({ binStr, onChange, colorClass = "bg-blue-600", readOnly = false }: { binStr: string, onChange?: (val: string) => void, colorClass?: string, readOnly?: boolean }) => (
   <div className="flex gap-1 sm:gap-1.5 w-full">
     {binStr.split('').map((bit, idx) => (
       <button
@@ -364,7 +381,7 @@ const BitArray = ({ binStr, onChange, colorClass = "bg-blue-600", readOnly = fal
   </div>
 );
 
-const SectionPanel = ({ title, icon: Icon, children, description, source, aiContext }: { title: string, icon: any, children: React.ReactNode, description?: string, source?: string, aiContext?: string }) => (
+const SectionPanel = ({ title, icon: Icon, children, description, source, aiContext }: { title: string, icon: React.ElementType, children: React.ReactNode, description?: string, source?: string, aiContext?: string }) => (
   <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
     <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -480,7 +497,7 @@ export default function ITSearch() {
     return () => { isRunningRef.current = false; }
   }, [activeTab, searchAlgo]);
 
-  const runAnimationLoop = async (frames: any[]) => {
+  const runAnimationLoop = async (frames: Frame[]) => {
     setIsRunning(true);
     isRunningRef.current = true;
     setActiveIndices([]);
@@ -527,7 +544,7 @@ export default function ITSearch() {
 
   const handleStartSort = () => {
     if (isRunning) return;
-    let frames: any[] = [];
+    let frames: Frame[] = [];
     if (sortAlgo === 'BUBBLE') frames = generateBubbleSortFrames(dataArray);
     else if (sortAlgo === 'SELECTION') frames = generateSelectionSortFrames(dataArray);
     else if (sortAlgo === 'INSERTION') frames = generateInsertionSortFrames(dataArray);
@@ -538,7 +555,7 @@ export default function ITSearch() {
 
   const handleStartSearch = () => {
     if (isRunning) return;
-    let frames: any[] = [];
+    let frames: Frame[] = [];
     if (searchAlgo === 'LINEAR') frames = generateLinearSearchFrames(dataArray, searchTarget);
     else if (searchAlgo === 'BINARY') frames = generateBinarySearchFrames(dataArray, searchTarget);
     runAnimationLoop(frames);
