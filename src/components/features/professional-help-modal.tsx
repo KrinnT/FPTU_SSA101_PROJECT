@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Phone, MapPin, HeartHandshake, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
