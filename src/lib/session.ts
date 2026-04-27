@@ -56,7 +56,7 @@ export async function setSession(user: SessionUser) {
     (await cookies()).set("session", session, {
         expires,
         httpOnly: true,
-        secure: false, // Ensure this is false on localhost
+        secure: isProduction,
         sameSite: "lax",
         path: "/",
     });
@@ -73,7 +73,7 @@ export async function getPendingSession() {
     if (!session) return null;
     try {
         return await decrypt(session);
-    } catch (e) {
+    } catch {
         return null;
     }
 }
