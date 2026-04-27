@@ -117,7 +117,7 @@ const AiTutor = ({ context }: { context: string }) => {
 
 // ==========================================
 // THUẬT TOÁN SẮP XẾP VÀ TÌM KIẾM
-// ==========================================
+// Types
 interface Frame {
   type: string;
   indices?: number[];
@@ -414,9 +414,7 @@ const LiveConsole = ({ title, message }: { title: string, message: string }) => 
   </div>
 );
 
-// ==========================================
-// MAIN APP COMPONENT
-// ==========================================
+// Main App Component
 export default function ITSearch() {
   const [activeTab, setActiveTab] = useState('logic'); 
 
@@ -517,18 +515,18 @@ export default function ITSearch() {
       if (frame.indices) setActiveIndices(frame.indices);
       if (frame.msg) setStepMessage(frame.msg);
 
-      if (frame.type === 'sorted') setSortedIndices(prev => [...prev, frame.index]);
-      else if (frame.type === 'mark_sorted_up_to') {
-        const newSorted = [];
-        for (let k = 0; k <= frame.index; k++) newSorted.push(k);
+      if (frame.type === 'sorted' && frame.index !== undefined) {
+        setSortedIndices(prev => [...prev, frame.index as number]);
+      } else if (frame.type === 'mark_sorted_up_to' && frame.index !== undefined) {
+        const newSorted = Array.from({ length: frame.index + 1 }, (_, k) => k);
         setSortedIndices(newSorted);
       } else if (frame.type === 'all_sorted') {
-        setSortedIndices(dataArray.map((_, idx) => idx));
+        setSortedIndices((frame.arr || dataArray).map((_, idx) => idx));
         setActiveIndices([]);
       }
 
-      if (frame.type === 'range') setActiveRange(frame.range);
-      if (frame.type === 'found') {
+      if (frame.type === 'range') setActiveRange(frame.range || null);
+      if (frame.type === 'found' && frame.indices && frame.indices.length > 0) {
         setFoundIndex(frame.indices[0]);
         setActiveIndices([]);
       }
@@ -537,8 +535,8 @@ export default function ITSearch() {
       await new Promise(r => setTimeout(r, delay));
     }
 
-    if(isRunningRef.current && activeTab === 'sort') {
-      setSortedIndices(dataArray.map((_, idx) => idx)); 
+    if (isRunningRef.current && activeTab === 'sort') {
+      setSortedIndices(Array.from({ length: dataArray.length }, (_, idx) => idx)); 
       setActiveIndices([]);
     }
     isRunningRef.current = false;
@@ -636,7 +634,7 @@ export default function ITSearch() {
             </nav>
             <div className="mt-8 p-4 bg-amber-50 rounded-lg border border-amber-100 text-xs text-amber-800 shadow-sm">
               <Info size={16} className="mb-2" />
-              Tương tác với hệ thống, xem "Live Console" và hỏi <strong>Giáo sư AI ✨</strong> ở bên dưới nhé!
+              Tương tác với hệ thống, xem &quot;Live Console&quot; và hỏi <strong>Giáo sư AI ✨</strong> ở bên dưới nhé!
             </div>
           </div>
         </div>
