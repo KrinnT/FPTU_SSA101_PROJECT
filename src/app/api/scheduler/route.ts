@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // GET: Fetch all scheduler data (FixedEvents + Tasks)
-export async function GET(req: Request) {
+export async function GET() {
     try {
         const session = await getSession();
         if (!session || !session.user?.id) {
@@ -18,13 +18,13 @@ export async function GET(req: Request) {
         ]);
 
         return NextResponse.json({ fixedEvents, tasks });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
 
 // DELETE: Clear all scheduler data for user (Reset)
-export async function DELETE(req: Request) {
+export async function DELETE() {
     try {
         const session = await getSession();
         if (!session || !session.user?.id) {
@@ -37,7 +37,7 @@ export async function DELETE(req: Request) {
         ]);
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
