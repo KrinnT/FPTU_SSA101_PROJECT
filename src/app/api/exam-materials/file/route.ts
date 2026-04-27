@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
         if (!id && !fileId) return NextResponse.json({ error: "Missing id or fileId" }, { status: 400 });
 
-        // ── Case 1: serve by MaterialFile ID ──────────────────────────────
+        
         if (fileId) {
             const materialFile = await prisma.materialFile.findUnique({
                 where: { id: fileId },
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
             });
         }
 
-        // ── Case 2: serve by Material ID (downloads all as primary file) ──
+        
         if (id) {
             const material = await prisma.material.findUnique({
                 where: { id },

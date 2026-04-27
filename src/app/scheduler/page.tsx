@@ -120,7 +120,7 @@ function SchedulerContent() {
         } catch (e) { console.error(e); }
     };
 
-    // --- HELPERS ---
+    
     const timeToFloat = (time: string) => {
         const [h, m] = time.split(":").map(Number);
         return h + m / 60;
@@ -132,7 +132,7 @@ function SchedulerContent() {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     };
 
-    // --- ALGORITHM ---
+    
     const checkCollision = (day: string, start: number, duration: number, currentFixed: FixedEvent[], currentTasks: Task[], ignoreTaskId?: string) => {
         const end = start + duration;
         const BUFFER = 0.25; // 15 minutes gap
@@ -366,7 +366,7 @@ function SchedulerContent() {
         } catch (e) { console.error("Batch update failed", e); }
     };
 
-    // --- CALENDAR EVENTS FORMATTING ---
+    
     // Helper to find date for a specific day of the week in current week
     const getNextDateForDay = (dayName: string) => {
         const today = new Date();

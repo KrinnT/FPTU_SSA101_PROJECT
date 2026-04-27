@@ -36,7 +36,7 @@ export async function PATCH(req: Request) {
 
         const userId = session.user.id;
 
-        // ── Action: update personal info ────────────────────────────────────
+        
         if (action === "updateProfile") {
             const updated = await prisma.user.update({
                 where: { id: userId },
@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ user: updated });
         }
 
-        // ── Action: change email ─────────────────────────────────────────────
+        
         if (action === "changeEmail") {
             if (!currentPassword || !newEmail) {
                 return NextResponse.json({ error: "Current password and new email are required" }, { status: 400 });
@@ -80,7 +80,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ user: updated });
         }
 
-        // ── Action: change password ──────────────────────────────────────────
+        
         if (action === "changePassword") {
             if (!currentPassword || !newPassword) {
                 return NextResponse.json({ error: "Both current and new passwords are required" }, { status: 400 });

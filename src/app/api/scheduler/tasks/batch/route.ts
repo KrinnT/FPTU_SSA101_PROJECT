@@ -21,7 +21,7 @@ export async function PUT(req: Request) {
         // Perform updates in transaction or parallel
         // Prisma transaction is safer
         await prisma.$transaction(
-            updates.map((u: any) =>
+            updates.map((u: { id: string; assignedSlot?: { day: string; startTime: string } }) =>
                 prisma.task.update({
                     where: { id: u.id, userId: session.user.id },
                     data: {

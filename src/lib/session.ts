@@ -55,7 +55,7 @@ export async function clearSession() {
     (await cookies()).delete("session");
 }
 
-// --- Pending Verification Logic ---
+
 
 export async function getPendingSession() {
     const session = (await cookies()).get("pending_verification")?.value;

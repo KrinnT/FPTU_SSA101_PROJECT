@@ -6,7 +6,7 @@ const API_KEY = process.env.CHAT_API_KEY || "sk-pE3s1y9Rcxz8AyAn2jh6bRrHbjhb5";
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// --- GET: Fetch Chat History ---
+
 export async function GET(req: Request) {
     try {
         const session = await getSession();
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     }
 }
 
-// --- DELETE: Clear all chat history for current user ---
+
 export async function DELETE(req: Request) {
     try {
         const session = await getSession();
@@ -62,7 +62,7 @@ export async function DELETE(req: Request) {
     }
 }
 
-// --- POST: Send Message & Reply (Streaming) ---
+
 export async function POST(req: Request) {
     try {
         const session = await getSession();

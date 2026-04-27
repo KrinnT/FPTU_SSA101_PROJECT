@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/layout/protected-route";
 import { upload } from '@vercel/blob/client';
 
-// ── Types ──────────────────────────────────────────────────────────────
+
 interface Semester {
     id: string;
     name: string;
@@ -41,7 +41,7 @@ interface UploadFileWithPreview extends File {
     previewUrl?: string;
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+
 function formatSize(bytes: number) {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -56,7 +56,7 @@ function typeIcon(type: string) {
     return map[type.toUpperCase()] ?? "📄";
 }
 
-// ── Main Export ──────────────────────────────────────────────────────────
+
 export default function ExamMaterialsPage() {
     return (
         <ProtectedRoute>
@@ -66,7 +66,7 @@ export default function ExamMaterialsPage() {
 }
 
 function ExamMaterialsContent() {
-    // ─── State ──────────────────────────────────
+    
     const [semesters, setSemesters] = useState<Semester[]>([]);
     const [materials, setMaterials] = useState<Material[]>([]);
     const [total, setTotal] = useState(0);
@@ -99,7 +99,7 @@ function ExamMaterialsContent() {
     // Copied link toast
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    // ─── Data Fetching ──────────────────────────
+    
     useEffect(() => {
         fetch("/api/exam-materials/filters")
             .then(r => r.json())
@@ -145,7 +145,7 @@ function ExamMaterialsContent() {
         }
     }
 
-    // ─── Actions ────────────────────────────────
+    
     const availableSubjects = Array.isArray(semesters) 
         ? (selectedSemesterId 
             ? semesters.find(s => s.id === selectedSemesterId)?.subjects ?? [] 
@@ -270,7 +270,7 @@ function ExamMaterialsContent() {
         }
     }
 
-    // ─── Render ──────────────────────────────────
+    
     return (
         <div className="min-h-screen bg-background w-full overflow-x-hidden">
             {/* ── Header ── */}
@@ -697,7 +697,7 @@ function ExamMaterialsContent() {
     );
 }
 
-// ── Material Card Component ──────────────────────────────────────────────
+
 function MaterialCard({
     material, onDownload, onPreview, onShare, onDelete, copied, isOwn
 }: {

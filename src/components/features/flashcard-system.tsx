@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea"; // Assuming you have this or use standard textarea
 import { cn } from "@/lib/utils";
 
-// --- Types ---
+
 interface Flashcard {
     id: string;
     front: string;
@@ -26,7 +26,7 @@ interface Deck {
     cards: Flashcard[];
 }
 
-// --- Data & Helpers ---
+
 
 
 const COLORS = [
@@ -34,7 +34,7 @@ const COLORS = [
     "bg-cyan-500", "bg-indigo-500", "bg-violet-500", "bg-pink-500"
 ];
 
-// --- Components ---
+
 
 export function FlashcardSystem({ initialDecks = [] }: { initialDecks?: Deck[] }) {
     // State
@@ -44,7 +44,7 @@ export function FlashcardSystem({ initialDecks = [] }: { initialDecks?: Deck[] }
 
     const activeDeck = decks.find(d => d.id === activeDeckId);
 
-    // --- Handlers ---
+    
     const createDeck = async (title: string, desc: string, color: string) => {
         try {
             const res = await fetch("/api/flashcards", {
@@ -110,7 +110,7 @@ export function FlashcardSystem({ initialDecks = [] }: { initialDecks?: Deck[] }
         }
     };
 
-    // --- Render ---
+    
 
     if (isStudyMode && activeDeck) {
         return <StudyMode deck={activeDeck} onExit={() => setIsStudyMode(false)} />;
@@ -129,7 +129,7 @@ export function FlashcardSystem({ initialDecks = [] }: { initialDecks?: Deck[] }
     return <DeckList decks={decks} onCreate={createDeck} onDelete={deleteDeck} onSelect={setActiveDeckId} />;
 }
 
-// --- Sub-Components ---
+
 
 function DeckList({ decks, onCreate, onDelete, onSelect }: {
     decks: Deck[],

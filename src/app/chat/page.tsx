@@ -9,7 +9,7 @@ import ProtectedRoute from "@/components/layout/protected-route";
 import { ProfessionalHelpModal } from "@/components/features/professional-help-modal";
 import ReactMarkdown from "react-markdown";
 
-// --- SMART LOGIC ENGINE ---
+
 
 interface Message {
     id: string;
@@ -123,7 +123,7 @@ const getResponse = (sentiment: Sentiment, state: ChatState): { text: string, ne
         nextState.interactionCount = 1; // Reset count for new topic
     }
 
-    // --- RESPONSE LOGIC ---
+    
 
     // 1. Greeting
     if (sentiment === "greeting") {
@@ -277,7 +277,7 @@ function ChatContent() {
 
             if (!response.body) throw new Error("No response body");
 
-            // Create placeholder for bot message
+            
             const botMsgId = (Date.now() + 1).toString();
             const botMsg: Message = {
                 id: botMsgId,

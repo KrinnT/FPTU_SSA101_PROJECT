@@ -17,7 +17,7 @@ export async function GET(req: Request) {
         const limit = 20;
         const skip = (page - 1) * limit;
 
-        const where: any = { status: 'APPROVED' };
+        const where: Record<string, unknown> = { status: 'APPROVED' };
         if (semesterId) where.semesterId = semesterId;
         if (subjectId) where.subjectId = subjectId;
         if (search) {

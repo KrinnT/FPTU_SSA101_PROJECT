@@ -58,7 +58,7 @@ export function UserProfileDropdown() {
         setPanel(p);      // then open modal
     };
 
-    // ── Dropdown Menu ──────────────────────────────────────────
+    
     const dropdown = mounted && open && !panel && createPortal(
         <div
             id="user-profile-drop"
@@ -82,7 +82,7 @@ export function UserProfileDropdown() {
         document.body
     );
 
-    // ── Panel Modals ────────────────────────────────────────────
+    
     const panelModal = mounted && panel && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
             onClick={e => e.target === e.currentTarget && setPanel(null)}>
@@ -132,7 +132,7 @@ function MenuBtn({ icon, label, onClick }: { icon: React.ReactNode; label: strin
     );
 }
 
-// ── Profile Panel ──────────────────────────────────────────────
+
 function ProfilePanel({ user, onSaved }: { user: { name?: string | null; email: string }; onSaved: () => void }) {
     const [name, setName] = useState(user.name || "");
     const [phone, setPhone] = useState("");
@@ -174,7 +174,7 @@ function ProfilePanel({ user, onSaved }: { user: { name?: string | null; email: 
     );
 }
 
-// ── Security Panel ──────────────────────────────────────────────
+
 function SecurityPanel() {
     const [tab, setTab] = useState<SecurityTab>("password");
     const tabs: { key: SecurityTab; label: string }[] = [
@@ -280,7 +280,7 @@ function TwoFAInfo() {
     );
 }
 
-// ── Tiny UI Atoms ──────────────────────────────────────────────
+
 function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
     return (
         <div>

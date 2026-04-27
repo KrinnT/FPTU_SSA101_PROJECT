@@ -6,7 +6,7 @@ import { unstable_cache, revalidatePath, revalidateTag } from 'next/cache';
 
 const getCachedPosts = unstable_cache(
     async (category?: string, page: number = 1, limit: number = 10) => {
-        const whereClause = (category && category !== "ALL") ? { category: category as any } : {};
+        const whereClause = (category && category !== "ALL") ? { category: category as import("@prisma/client").PostCategory } : {};
         return await prisma.post.findMany({
             where: whereClause,
             take: limit,
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
         // Or we better fetch directly from DB for load more to avoid complex cache keys
 
         if (page > 1) {
-            const whereClause = (category && category !== "ALL") ? { category: category as any } : {};
+            const whereClause = (category && category !== "ALL") ? { category: category as import("@prisma/client").PostCategory } : {};
             const posts = await prisma.post.findMany({
                 where: whereClause,
                 take: limit,
