@@ -16,6 +16,7 @@ interface Post {
     authorId: string;
     author: { name: string; };
     comments: Comment[];
+    likedByUser?: boolean;
 }
 
 interface Comment {
@@ -61,7 +62,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                 setPosts([...posts, ...newPosts]);
                 setPage(nextPage);
             }
-        } catch (e) {
+        } catch {
             console.error("Failed to load more");
         } finally {
             setIsLoadingMore(false);
@@ -80,7 +81,9 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                 setPosts(newPosts);
                 setHasMore(newPosts.length >= 10);
             }
-        } catch (e) { } finally {
+        } catch { 
+            console.error("Failed to load category");
+        } finally {
             setIsLoadingMore(false);
         }
     };
@@ -107,7 +110,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
             } else {
                 setError("Failed to post. Please try again.");
             }
-        } catch (e) {
+        } catch {
             setError("Network error.");
         }
     };
@@ -129,7 +132,9 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                     p.id === id ? { ...p, likes: data.likes, likedByUser: data.liked } : p
                 ));
             }
-        } catch (e) { console.error(e); }
+        } catch {
+            console.error("Failed to like post");
+        }
     };
 
     const handleDelete = async (id: string) => {
@@ -141,7 +146,9 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
             } else {
                 alert("Failed to delete post");
             }
-        } catch (e) { alert("Error deleting post"); }
+        } catch {
+            alert("Error deleting post");
+        }
     };
 
     const handleReply = async (postId: string) => {
@@ -164,7 +171,9 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                 setReplyContent("");
                 setReplyingTo(null);
             }
-        } catch (e) { }
+        } catch {
+            console.error("Failed to reply");
+        }
     };
 
 
@@ -232,7 +241,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: Post[] }) {
                         No posts in this category yet. Be the first!
                     </div>
                 )}
-                {posts.map((post: any) => (
+                {posts.map((post) => (
                     <PostItem
                         key={post.id}
                         post={post}
