@@ -13,14 +13,15 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const [language, setLanguageState] = useState<Language>("en");
-    const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem("app_language") as Language;
         if (stored && (stored === "en" || stored === "vn")) {
-            setLanguageState(stored);
+            const timer = setTimeout(() => {
+                setLanguageState(stored);
+            }, 0);
+            return () => clearTimeout(timer);
         }
-        setIsLoaded(true);
     }, []);
 
     const setLanguage = (lang: Language) => {
