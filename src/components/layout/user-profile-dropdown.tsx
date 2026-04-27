@@ -20,7 +20,12 @@ export function UserProfileDropdown() {
     const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 0);
+        return () => clearTimeout(timer);
+    }, []);
 
     const updatePos = () => {
         if (!triggerRef.current) return;
