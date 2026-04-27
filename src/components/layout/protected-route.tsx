@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { user, isAuthenticated, loading } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
