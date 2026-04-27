@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
         // This is called on your server after a file is successfully uploaded
-        console.log('Blob upload completed', blob, tokenPayload);
+        logger.info('Blob upload completed', blob, tokenPayload);
       },
     });
 
