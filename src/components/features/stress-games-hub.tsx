@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Circle, Palette, Music, Gamepad2, Loader2 } from "lucide-react";
+import { Circle, Palette, Music, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Lazy load games to reduce initial bundle size (especially matter.js)
