@@ -53,16 +53,21 @@ export function NudgeSystem() {
     }, []);
 
     useEffect(() => {
-        setIsClient(true);
-        const now = Date.now();
-        setNextTime(now + frequency * 60 * 1000); // Initialize timer after hydration
+        const timer = setTimeout(() => {
+            setIsClient(true);
+            const now = Date.now();
+            setNextTime(now + frequency * 60 * 1000); // Initialize timer after hydration
+        }, 0);
+        return () => clearTimeout(timer);
     }, [frequency]);
 
     useEffect(() => {
         const isAuthPage = ['/login', '/register', '/verify'].includes(pathname || '');
         if (!user || isAuthPage || !isClient || nextTime === 0) {
-            setIsVisible(false);
-            return;
+            const timer = setTimeout(() => {
+                setIsVisible(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
 
         // Check every 5 seconds if it's time to nudge
