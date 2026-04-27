@@ -42,8 +42,12 @@ export default function ForgotPasswordPage() {
                 setSuccessMsg(data.message);
                 setStep(2); // Move to reset step
             }
-        } catch (err: any) {
-            setError(err.message || "Failed to connect to server.");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message || "Failed to connect to server.");
+            } else {
+                setError("Failed to connect to server.");
+            }
         } finally {
             setIsLoading(false);
         }
