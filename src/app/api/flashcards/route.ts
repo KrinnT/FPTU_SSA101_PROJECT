@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
 // GET: Fetch all decks for user
-export async function GET(req: Request) {
+export async function GET() {
     try {
         const session = await getSession();
         if (!session || !session.user?.id) {
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         });
 
         return NextResponse.json(decks);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
