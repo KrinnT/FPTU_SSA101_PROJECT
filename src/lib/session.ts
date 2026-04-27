@@ -1,10 +1,21 @@
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
+
+export interface SessionUser {
+    id: string;
+    email: string;
+    name?: string;
+    role?: string;
+}
+
+export interface SessionPayload extends JWTPayload {
+    user?: SessionUser;
+}
 
 const secretKey = process.env.JWT_SECRET || "secret-key-change-me";
 const key = new TextEncoder().encode(secretKey);
 
-export async function encrypt(payload: any) {
+export async function encrypt(payload: SessionPayload) {
     return await new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
@@ -12,11 +23,11 @@ export async function encrypt(payload: any) {
         .sign(key);
 }
 
-export async function decrypt(input: string): Promise<any> {
+export async function decrypt(input: string): Promise<SessionPayload> {
     const { payload } = await jwtVerify(input, key, {
         algorithms: ["HS256"],
     });
-    return payload;
+    return payload as SessionPayload;
 }
 
 export async function getSession() {
@@ -34,7 +45,7 @@ export async function getSession() {
     }
 }
 
-export async function setSession(user: any) {
+export async function setSession(user: SessionUser) {
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const session = await encrypt({ user });
 
@@ -67,7 +78,7 @@ export async function getPendingSession() {
     }
 }
 
-export async function setPendingSession(data: any) {
+export async function setPendingSession(data: SessionPayload) {
     // Expires in 15 minutes for security
     const expires = new Date(Date.now() + 15 * 60 * 1000);
     const session = await encrypt(data);
