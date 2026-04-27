@@ -215,7 +215,7 @@ function ChatContent() {
                     const data = await res.json();
                     if (data.messages && data.messages.length > 0) {
                         // Ensure dates are parsed
-                        const hydrated = data.messages.map((m: any) => ({
+                        const hydrated = data.messages.map((m: { timestamp: string | number | Date }) => ({
                             ...m,
                             timestamp: new Date(m.timestamp)
                         }));
@@ -308,12 +308,12 @@ function ChatContent() {
                 }
             }
 
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "bot",
-                text: `Error: ${error.message || "Connection failed"}. Please check your API usage or try again.`,
+                text: `Error: ${error instanceof Error ? error.message : "Connection failed"}. Please check your API usage or try again.`,
                 timestamp: new Date(),
                 type: "normal"
             };
@@ -416,7 +416,7 @@ function ChatContent() {
                                             <div className="prose dark:prose-invert prose-sm max-w-none break-words">
                                                 <ReactMarkdown
                                                     components={{
-                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                        p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                                                     }}
                                                 >
                                                     {msg.text}

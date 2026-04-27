@@ -128,13 +128,13 @@ interface Frame {
 }
 
 const generateBubbleSortFrames = (arr: number[]) => {
-  let frames: Frame[] = [];
-  let tempArr = [...arr];
+  const frames: Frame[] = [];
+  const tempArr = [...arr];
   for (let i = 0; i < tempArr.length; i++) {
     for (let j = 0; j < tempArr.length - i - 1; j++) {
       frames.push({ type: 'compare', indices: [j, j + 1], arr: [...tempArr], msg: `So sánh A[${j}]=${tempArr[j]} và A[${j+1}]=${tempArr[j+1]}` });
       if (tempArr[j] > tempArr[j + 1]) {
-        let temp = tempArr[j];
+        const temp = tempArr[j];
         tempArr[j] = tempArr[j + 1];
         tempArr[j + 1] = temp;
         frames.push({ type: 'swap', indices: [j, j + 1], arr: [...tempArr], msg: `Hoán đổi! Vì ${temp} > ${tempArr[j]}` });
@@ -147,8 +147,8 @@ const generateBubbleSortFrames = (arr: number[]) => {
 };
 
 const generateSelectionSortFrames = (arr: number[]) => {
-  let frames: Frame[] = [];
-  let tempArr = [...arr];
+  const frames: Frame[] = [];
+  const tempArr = [...arr];
   for(let i=0; i<tempArr.length; i++) {
     let minIdx = i;
     for(let j=i+1; j<tempArr.length; j++) {
@@ -159,7 +159,7 @@ const generateSelectionSortFrames = (arr: number[]) => {
        }
     }
     if(minIdx !== i) {
-        let temp = tempArr[i];
+        const temp = tempArr[i];
         tempArr[i] = tempArr[minIdx];
         tempArr[minIdx] = temp;
         frames.push({ type: 'swap', indices: [i, minIdx], arr: [...tempArr], msg: `Hoán đổi Min (${tempArr[i]}) về đầu đoạn chưa sắp xếp (vị trí ${i})` });
@@ -171,11 +171,11 @@ const generateSelectionSortFrames = (arr: number[]) => {
 };
 
 const generateInsertionSortFrames = (arr: number[]) => {
-  let frames: Frame[] = [];
-  let tempArr = [...arr];
+  const frames: Frame[] = [];
+  const tempArr = [...arr];
   frames.push({ type: 'sorted', index: 0, msg: `Giả sử phần tử đầu tiên đã được sắp xếp.` });
   for(let i=1; i<tempArr.length; i++) {
-    let key = tempArr[i];
+    const key = tempArr[i];
     let j = i - 1;
     frames.push({ type: 'compare', indices: [j, i], arr: [...tempArr], msg: `Lấy A[${i}]=${key} làm Khóa (Key) để chèn.` });
     while(j >= 0 && tempArr[j] > key) {
@@ -192,14 +192,14 @@ const generateInsertionSortFrames = (arr: number[]) => {
 };
 
 const generateMergeSortFrames = (arr: number[]) => {
-  let frames: Frame[] = [];
-  let tempArr = [...arr];
+  const frames: Frame[] = [];
+  const tempArr = [...arr];
   
   const merge = (l: number, m: number, r: number) => {
-    let n1 = m - l + 1;
-    let n2 = r - m;
-    let L = new Array(n1);
-    let R = new Array(n2);
+    const n1 = m - l + 1;
+    const n2 = r - m;
+    const L = new Array(n1);
+    const R = new Array(n2);
     for (let i = 0; i < n1; i++) L[i] = tempArr[l + i];
     for (let j = 0; j < n2; j++) R[j] = tempArr[m + 1 + j];
     
@@ -233,7 +233,7 @@ const generateMergeSortFrames = (arr: number[]) => {
 
   const sort = (l: number, r: number) => {
     if (l >= r) return;
-    let m = l + Math.floor((r - l) / 2);
+    const m = l + Math.floor((r - l) / 2);
     frames.push({ type: 'info', msg: `Chia mảng từ ${l} đến ${r} tại Mid = ${m}` });
     sort(l, m);
     sort(m + 1, r);
@@ -245,24 +245,24 @@ const generateMergeSortFrames = (arr: number[]) => {
 };
 
 const generateQuickSortFrames = (arr: number[]) => {
-  let frames: Frame[] = [];
-  let tempArr = [...arr];
+  const frames: Frame[] = [];
+  const tempArr = [...arr];
 
   const partition = (low: number, high: number) => {
-    let pivot = tempArr[high];
+    const pivot = tempArr[high];
     frames.push({ type: 'info', indices: [high], msg: `Chọn Pivot = ${pivot} (Phần tử cuối đoạn [${low}..${high}])` });
     let i = low - 1;
     for(let j = low; j <= high - 1; j++) {
       frames.push({ type: 'compare', indices: [j, high], arr: [...tempArr], msg: `So sánh A[${j}]=${tempArr[j]} với Pivot (${pivot})` });
       if (tempArr[j] < pivot) {
         i++;
-        let temp = tempArr[i];
+        const temp = tempArr[i];
         tempArr[i] = tempArr[j];
         tempArr[j] = temp;
         frames.push({ type: 'swap', indices: [i, j], arr: [...tempArr], msg: `Vì ${tempArr[i]} < Pivot, hoán đổi với vị trí ranh giới (${i})` });
       }
     }
-    let temp = tempArr[i+1];
+    const temp = tempArr[i+1];
     tempArr[i+1] = tempArr[high];
     tempArr[high] = temp;
     frames.push({ type: 'swap', indices: [i+1, high], arr: [...tempArr], msg: `Đặt Pivot (${pivot}) vào vị trí chuẩn xác là ${i+1}` });
@@ -272,7 +272,7 @@ const generateQuickSortFrames = (arr: number[]) => {
 
   const sort = (low: number, high: number) => {
     if (low < high) {
-      let pi = partition(low, high);
+      const pi = partition(low, high);
       sort(low, pi - 1);
       sort(pi + 1, high);
     } else if (low === high) {
@@ -286,7 +286,7 @@ const generateQuickSortFrames = (arr: number[]) => {
 };
 
 const generateLinearSearchFrames = (arr: number[], target: number) => {
-  let frames: Frame[] = [];
+  const frames: Frame[] = [];
   for (let i = 0; i < arr.length; i++) {
     frames.push({ type: 'compare', indices: [i], arr: [...arr], msg: `Lần lặp ${i}: So sánh A[${i}] = ${arr[i]} với Target = ${target}` });
     if (arr[i] === target) {
@@ -299,12 +299,12 @@ const generateLinearSearchFrames = (arr: number[], target: number) => {
 };
 
 const generateBinarySearchFrames = (arr: number[], target: number) => {
-  let frames: Frame[] = [];
+  const frames: Frame[] = [];
   let left = 0;
   let right = arr.length - 1;
 
   while (left <= right) {
-    let mid = Math.floor((left + right) / 2);
+    const mid = Math.floor((left + right) / 2);
     frames.push({ 
       type: 'range', 
       range: [left, right], 
@@ -472,7 +472,7 @@ export default function ITSearch() {
     setActiveRange(null);
     setStepMessage('');
     
-    let arr = Array.from({ length: 25 }, () => Math.floor(Math.random() * 90) + 10);
+    const arr = Array.from({ length: 25 }, () => Math.floor(Math.random() * 90) + 10);
     
     // Yêu cầu tiên quyết cho Binary Search
     if (activeTab === 'search' && searchAlgo === 'BINARY') {
@@ -492,9 +492,12 @@ export default function ITSearch() {
 
   useEffect(() => {
     if (['sort', 'search'].includes(activeTab)) {
-      generateRandomArray();
+      const timer = setTimeout(() => {
+        generateRandomArray();
+      }, 0);
+      return () => clearTimeout(timer);
     }
-    return () => { isRunningRef.current = false; }
+    return () => { isRunningRef.current = false; };
   }, [activeTab, searchAlgo]);
 
   const runAnimationLoop = async (frames: Frame[]) => {
@@ -516,7 +519,7 @@ export default function ITSearch() {
 
       if (frame.type === 'sorted') setSortedIndices(prev => [...prev, frame.index]);
       else if (frame.type === 'mark_sorted_up_to') {
-        let newSorted = [];
+        const newSorted = [];
         for (let k = 0; k <= frame.index; k++) newSorted.push(k);
         setSortedIndices(newSorted);
       } else if (frame.type === 'all_sorted') {
@@ -597,7 +600,7 @@ export default function ITSearch() {
   const arithResult = useMemo(() => {
     const a = parseInt(arithA, 2);
     const b = parseInt(arithB, 2);
-    let res = arithOp === 'ADD' ? a + b : a - b;
+    const res = arithOp === 'ADD' ? a + b : a - b;
     return toBin8(res & 0xFF);
   }, [arithA, arithB, arithOp]);
 
