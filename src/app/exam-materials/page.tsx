@@ -107,12 +107,12 @@ function ExamMaterialsContent() {
                 if (Array.isArray(data)) setSemesters(data);
                 else console.error("Invalid filters data", data);
             })
-            .catch(console.error);
+            .catch(err => console.error(err));
 
         fetch("/api/auth/me")
             .then(r => r.json())
             .then(d => d?.user?.id && setCurrentUserId(d.user.id))
-            .catch(console.error);
+            .catch(err => console.error(err));
     }, []);
 
     useEffect(() => {
@@ -654,12 +654,12 @@ function ExamMaterialsContent() {
                             ) : (
                                 ['PDF'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
                                     <iframe
-                                        src={previewMaterial.fileUrl!}
+                                        src={previewMaterial.fileUrl}
                                         className="w-full h-full min-h-[75vh] rounded"
                                         title={previewMaterial.title}
                                     />
                                 ) : ['PNG', 'JPG', 'JPEG'].includes(previewMaterial?.type?.toUpperCase() || "") ? (
-                                    <img src={previewMaterial?.fileUrl!} alt={previewMaterial?.title} className="max-w-full mx-auto rounded" />
+                                    <img src={previewMaterial?.fileUrl ?? ''} alt={previewMaterial?.title} className="max-w-full mx-auto rounded" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
                                         <FileText className="w-12 h-12 opacity-30" />
@@ -681,7 +681,7 @@ function ExamMaterialsContent() {
                             <Button
                                 onClick={() => {
                                     const a = document.createElement('a');
-                                    a.href = `/api/exam-materials/file?id=${previewMaterial!.id}&download=1`;
+                                    a.href = `/api/exam-materials/file?id=${previewMaterial?.id}&download=1`;
                                     a.download = previewMaterial!.title;
                                     a.click();
                                 }}
