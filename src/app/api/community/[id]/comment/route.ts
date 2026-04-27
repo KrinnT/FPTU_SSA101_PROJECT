@@ -25,7 +25,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             include: { author: { select: { name: true } } }
         });
 
-        // @ts-ignore
+        // @ts-expect-error TypeScript doesn't know about stream body typing fully
         revalidateTag('community-posts');
         revalidatePath('/community');
 

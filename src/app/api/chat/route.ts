@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 
-export async function GET(req: Request) {
+export async function GET() {
     try {
         const session = await getSession();
         if (!session || !session.user?.id) {
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 }
 
 
-export async function DELETE(req: Request) {
+export async function DELETE() {
     try {
         const session = await getSession();
         if (!session || !session.user?.id) {
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
                                 fullReply += content;
                                 controller.enqueue(encoder.encode(content));
                             }
-                        } catch (e) { /* ignore parse errors */ }
+                        } catch { /* ignore parse errors */ }
                     }
                 }
             },
@@ -152,14 +152,14 @@ export async function POST(req: Request) {
                         await prisma.message.create({
                             data: { chatId: chat.id, role: 'assistant', content: fullReply }
                         });
-                    } catch (e) {
-                        console.error("Failed to save bot reply to DB:", e);
+                    } catch {
+                        console.error("Failed to save bot reply to DB");
                     }
                 }
             }
         });
 
-        // @ts-ignore
+        // @ts-expect-error TypeScript doesn't know about stream body typing fully
         const stream = response.body.pipeThrough(transformStream);
 
         return new NextResponse(stream, {

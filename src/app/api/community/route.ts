@@ -92,10 +92,10 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(post);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     } finally {
-        // @ts-ignore
+        // @ts-expect-error TypeScript doesn't know about stream body typing fully
         revalidateTag('community-posts'); // Invalidates the unstable_cache
         revalidatePath('/community'); // Invalidates the page
     }

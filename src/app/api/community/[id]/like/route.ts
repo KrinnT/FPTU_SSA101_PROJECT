@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             data: { likes: likesCount }
         });
 
-        // @ts-ignore
+        // @ts-expect-error revalidateTag
         revalidateTag('community-posts');
         revalidatePath('/community');
 
