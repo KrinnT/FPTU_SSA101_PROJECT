@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(data.user);
             router.push("/dashboard");
             return true;
-        } catch (e) {
+        } catch {
             return false;
         }
     };
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 router.push("/dashboard");
             }
             return { success: true };
-        } catch (e) {
+        } catch {
             return { success: false, error: "Network error" };
         }
     };
