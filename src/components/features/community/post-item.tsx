@@ -5,8 +5,25 @@ import { MessageSquare, Heart, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+interface Comment {
+    id: string;
+    content: string;
+    createdAt: string;
+    authorId: string;
+}
+
+interface Post {
+    id: string;
+    content: string;
+    category: string;
+    createdAt: string;
+    authorId: string;
+    likes: number;
+    comments: Comment[];
+}
+
 interface PostItemProps {
-    post: any;
+    post: Post;
     currentUserId?: string;
     likedByUser?: boolean;
     onLike: (id: string, currentlyLiked: boolean) => void;
@@ -75,7 +92,7 @@ export const PostItem = memo(({
                 {/* Replies Section */}
                 {post.comments && post.comments.length > 0 && (
                     <div className="w-full mt-2 space-y-2 pl-4 border-l-2 border-border/30">
-                        {post.comments.map((reply: any) => (
+                        {post.comments.map((reply: Comment) => (
                             <div key={reply.id} className="bg-secondary/10 p-2 rounded text-sm space-y-1">
                                 <div className="flex justify-between text-[10px] text-muted-foreground">
                                     <span>Anonymous</span>
