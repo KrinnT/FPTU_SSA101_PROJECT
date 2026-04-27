@@ -11,7 +11,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             data: { totalDownloads: { increment: 1 } }
         });
         return NextResponse.json({ ok: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 }
