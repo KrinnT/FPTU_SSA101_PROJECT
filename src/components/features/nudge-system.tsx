@@ -35,7 +35,8 @@ export function NudgeSystem() {
 
     useEffect(() => {
         setIsClient(true);
-        setNextTime(Date.now() + frequency * 60 * 1000); // Initialize timer after hydration
+        const now = Date.now();
+        setNextTime(now + frequency * 60 * 1000); // Initialize timer after hydration
     }, []);
 
     useEffect(() => {
@@ -47,7 +48,8 @@ export function NudgeSystem() {
 
         // Check every 5 seconds if it's time to nudge
         const interval = setInterval(() => {
-            if (Date.now() >= nextTime && !isVisible) {
+            const now = Date.now();
+            if (now >= nextTime && !isVisible) {
                 triggerNudge();
             }
         }, 5000);
@@ -64,13 +66,14 @@ export function NudgeSystem() {
 
     const dismiss = () => {
         setIsVisible(false);
-        // Schedule next one based on frequency
-        setNextTime(Date.now() + frequency * 60 * 1000);
+        const now = Date.now();
+        setNextTime(now + frequency * 60 * 1000);
     };
 
     const updateFrequency = (mins: number) => {
         setFrequency(mins);
-        setNextTime(Date.now() + mins * 60 * 1000); // Reset timer
+        const now = Date.now();
+        setNextTime(now + mins * 60 * 1000); // Reset timer
         setShowSettings(false);
         alert(`Đã cập nhật: Nhắc nhở mỗi ${mins} phút.`);
     };
