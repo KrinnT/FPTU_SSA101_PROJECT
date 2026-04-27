@@ -2,8 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Clock, Settings, Heart, Coffee, BookOpen } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
 
@@ -33,11 +32,31 @@ export function NudgeSystem() {
     const [nextTime, setNextTime] = useState(0);
     const [isClient, setIsClient] = useState(false);
 
+    const triggerNudge = useCallback(() => {
+        const randomMsg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+        setMessage(randomMsg);
+        setIsVisible(true);
+    }, []);
+
+    const dismiss = useCallback(() => {
+        setIsVisible(false);
+        const now = Date.now();
+        setNextTime(now + frequency * 60 * 1000);
+    }, [frequency]);
+
+    const updateFrequency = useCallback((mins: number) => {
+        setFrequency(mins);
+        const now = Date.now();
+        setNextTime(now + mins * 60 * 1000); // Reset timer
+        setShowSettings(false);
+        alert(`Đã cập nhật: Nhắc nhở mỗi ${mins} phút.`);
+    }, []);
+
     useEffect(() => {
         setIsClient(true);
         const now = Date.now();
         setNextTime(now + frequency * 60 * 1000); // Initialize timer after hydration
-    }, []);
+    }, [frequency]);
 
     useEffect(() => {
         const isAuthPage = ['/login', '/register', '/verify'].includes(pathname || '');
@@ -55,28 +74,7 @@ export function NudgeSystem() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [nextTime, isVisible, user, pathname, isClient]);
-
-    const triggerNudge = () => {
-        const randomMsg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
-        setMessage(randomMsg);
-        setIsVisible(true);
-        // Special sound effect could go here
-    };
-
-    const dismiss = () => {
-        setIsVisible(false);
-        const now = Date.now();
-        setNextTime(now + frequency * 60 * 1000);
-    };
-
-    const updateFrequency = (mins: number) => {
-        setFrequency(mins);
-        const now = Date.now();
-        setNextTime(now + mins * 60 * 1000); // Reset timer
-        setShowSettings(false);
-        alert(`Đã cập nhật: Nhắc nhở mỗi ${mins} phút.`);
-    };
+    }, [nextTime, isVisible, user, pathname, isClient, triggerNudge]);
 
     return (
         <>
