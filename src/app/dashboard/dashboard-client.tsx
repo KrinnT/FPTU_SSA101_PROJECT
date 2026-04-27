@@ -87,7 +87,7 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
                 setEnergyLevel(50);
                 setSelectedEmotion(null);
             }
-        } catch (error) {
+        } catch {
             alert("Failed to save check-in");
         }
     };
@@ -157,7 +157,7 @@ export default function DashboardClient({ user, initialHistory, assessmentData }
                         <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 mt-1" />
                         <div className="space-y-3 flex-1 min-w-0 overflow-hidden">
                             <h3 className="font-bold text-rose-500 leading-tight text-base sm:text-lg break-words hyphens-auto">
-                                We noticed you've been feeling down lately.
+                                We noticed you&apos;ve been feeling down lately.
                             </h3>
                             <p className="text-sm text-rose-200 break-words w-full">
                                 Your well-being is our top priority. Consider reaching out to a counselor or using our support hotline.
