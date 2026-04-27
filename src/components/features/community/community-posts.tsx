@@ -25,19 +25,19 @@ export async function CommunityPosts() {
         });
 
         // Serialize dates for Client Component
-        const serializedPosts = initialPosts.map((post: any) => ({
+        const serializedPosts = initialPosts.map((post) => ({
             ...post,
             likedByUser: !!(post.postLikes && post.postLikes.length > 0),
             createdAt: post.createdAt.toISOString(),
             author: {
-                ...(post.author || {}),
+                ...post.author,
                 name: post.author?.name || "Anonymous"
             },
-            comments: post.comments.map((c: any) => ({
+            comments: post.comments.map((c) => ({
                 ...c,
                 createdAt: c.createdAt.toISOString(),
                 author: {
-                    ...(c.author || {}),
+                    ...c.author,
                     name: c.author?.name || "Anonymous"
                 }
             }))
