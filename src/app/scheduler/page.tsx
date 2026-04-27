@@ -41,6 +41,16 @@ interface Task {
     groupId?: string;
 }
 
+interface CalendarEvent {
+    id: string;
+    title: string;
+    start: Date;
+    end: Date;
+    isFixed: boolean;
+    resourceId: string;
+    taskId?: string;
+}
+
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const TIMES = Array.from({ length: 24 }, (_, i) => i); // 0:00 to 23:00
 
@@ -82,7 +92,7 @@ function SchedulerContent() {
                     setFixedEvents(data.fixedEvents || []);
 
                     // Hydrate Tasks and map assignedSlot
-                    const hydratedTasks = (data.tasks || []).map((t: any) => ({
+                    const hydratedTasks: Task[] = (data.tasks || []).map((t: { id: string; name: string; duration: number; groupId?: string; scheduledDay?: string; scheduledStartTime?: string }) => ({
                         id: t.id,
                         name: t.name,
                         duration: t.duration,
@@ -117,7 +127,9 @@ function SchedulerContent() {
                 setFixedEvents([...fixedEvents, event]);
                 setNewEvent({ ...newEvent, name: "" });
             }
-        } catch (e) { console.error(e); }
+        } catch {
+            console.error("Failed to add fixed event");
+        }
     };
 
     
@@ -186,9 +198,9 @@ function SchedulerContent() {
     const addEverydayTask = async () => {
         if (!everydayTask.name) return;
 
-        const newTasksParams: any[] = [];
-        let currentFixed = fixedEvents;
-        let localTasksClone = [...tasks];
+        const newTasksParams: { name: string; duration: number; scheduledDay: string; scheduledStartTime: string; groupId: string }[] = [];
+        const currentFixed = fixedEvents;
+        const localTasksClone = [...tasks];
         const groupId = crypto.randomUUID(); // Unique group ID for this everyday task set
         const optimisticTasks: Task[] = []; // To store temporary tasks for optimistic UI
         const globalStartFloat = timeToFloat(allowedStartTime);
@@ -252,7 +264,7 @@ function SchedulerContent() {
                     const createdTasks = await res.json();
 
                     // Format the response back to client schema
-                    const hydratedTasks = createdTasks.map((t: any) => ({
+                    const hydratedTasks: Task[] = createdTasks.map((t: { id: string; name: string; duration: number; groupId?: string; scheduledDay?: string; scheduledStartTime?: string }) => ({
                         id: t.id,
                         name: t.name,
                         duration: t.duration,
@@ -310,7 +322,9 @@ function SchedulerContent() {
                 setNormalTask({ ...normalTask, name: "" });
                 if (slot) setGenerated(true);
             }
-        } catch (e) { console.error(e); }
+        } catch {
+            console.error("Failed to add normal task");
+        }
     };
 
     const removeFixed = async (id: string) => {
@@ -319,7 +333,9 @@ function SchedulerContent() {
             setFixedEvents(fixedEvents.filter(e => e.id !== id));
             // Note: We might need to re-generate or warn user that tasks might now be invalid?
             // For now, keep it simple.
-        } catch (e) { console.error(e); }
+        } catch {
+            console.error("Failed to remove fixed event");
+        }
     };
 
     const removeTask = async (task: Task) => {
@@ -332,12 +348,14 @@ function SchedulerContent() {
             } else {
                 setTasks(tasks.filter(t => t.id !== task.id));
             }
-        } catch (e) { console.error(e); }
+        } catch {
+            console.error("Failed to remove task");
+        }
     };
 
     const generateSchedule = async () => {
         // Recalculate all slots
-        let currentTasksState: Task[] = [...tasks].map(t => ({ ...t, assignedSlot: undefined }));
+        const currentTasksState: Task[] = [...tasks].map(t => ({ ...t, assignedSlot: undefined }));
 
         for (let i = 0; i < currentTasksState.length; i++) {
             const task = currentTasksState[i];
@@ -363,7 +381,9 @@ function SchedulerContent() {
                     }))
                 })
             });
-        } catch (e) { console.error("Batch update failed", e); }
+        } catch {
+            console.error("Batch update failed");
+        }
     };
 
     
@@ -381,7 +401,7 @@ function SchedulerContent() {
         return targetDate;
     };
 
-    const calendarEvents: any[] = [];
+    const calendarEvents: CalendarEvent[] = [];
 
     for (let w = 0; w < repeatWeeks; w++) {
         const weekOffset = w * 7 * 24 * 60 * 60 * 1000;
@@ -437,7 +457,7 @@ function SchedulerContent() {
         });
     }
 
-    const onEventDrop = async ({ event, start, end }: any) => {
+    const onEventDrop = async ({ event, start }: { event: CalendarEvent; start: Date; end: Date }) => {
         if (event.isFixed) return; // Cannot move fixed events via UI simply
 
         const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -461,12 +481,12 @@ function SchedulerContent() {
                     scheduledStartTime: newStartTime
                 })
             });
-        } catch (e) {
-            console.error("Failed to move event", e);
+        } catch {
+            console.error("Failed to move event");
         }
     };
 
-    const onSelectEvent = (event: any) => {
+    const onSelectEvent = (event: CalendarEvent) => {
         if (window.confirm(`Are you sure you want to delete '${event.title}'?`)) {
             if (event.isFixed) {
                 removeFixed(event.resourceId);
@@ -479,7 +499,7 @@ function SchedulerContent() {
         }
     };
 
-    const onSelectSlot = ({ start, end }: any) => {
+    const onSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
         const h = start.getHours().toString().padStart(2, '0');
         const m = start.getMinutes().toString().padStart(2, '0');
         const eh = end.getHours().toString().padStart(2, '0');
@@ -499,7 +519,7 @@ function SchedulerContent() {
         if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const CustomEvent = ({ event }: any) => (
+    const CustomEvent = ({ event }: { event: CalendarEvent }) => (
         <div className="flex flex-col h-full w-full overflow-hidden">
             <div className="font-bold truncate text-[0.8rem] leading-tight">
                 {event.title}
@@ -531,7 +551,10 @@ function SchedulerContent() {
     // Normal tasks are tasks that don't have a 7-day pattern (for this UI simplified assumption, 
     // we'll just say any task without a groupId or single is normal, but actually everyday tasks always get a groupId)
     const normalTasks = tasks.filter(t => !t.groupId || t.groupId === "");
-    const groupedEverydayTasks = everydayTaskGroups.filter((g: any) => g.daysCount === 7 || g.id.startsWith("temp-"));
+    const groupedEverydayTasks = everydayTaskGroups.filter((g) => {
+        const task = g as Task & { daysCount: number };
+        return task.daysCount === 7 || task.id.startsWith("temp-");
+    });
 
     if (isLoading) {
         return (
