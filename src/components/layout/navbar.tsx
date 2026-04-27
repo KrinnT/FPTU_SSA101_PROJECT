@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, LogOut, Clock, Play, Gamepad2, BookOpen, Terminal } from "lucide-react";
+import { LayoutDashboard, MessageCircle, HeartPulse, Users, Brain, Home, LogIn, Clock, Play, Gamepad2, BookOpen, Terminal } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { UserProfileDropdown } from "@/components/layout/user-profile-dropdown";
 
+interface NavItem {
+    name: string;
+    href: string;
+    icon: React.ReactNode;
+}
+
 export function Navbar() {
     const pathname = usePathname();
-    const { user, logout } = useAuth();
-
-    // Debug: Log version to help user verify deployment
-    useEffect(() => {
-        console.log("%c VERSION: V6-DB-SPEED-OPTIMIZED ", "background: #000; color: #00ff00; font-size: 20px; font-weight: bold; border: 2px solid #00ff00; padding: 10px;");
-        console.log("If you see this, the NEW code is running.");
-    }, []);
+    const { user } = useAuth();
 
     const psychItems = [
         { name: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -41,7 +40,7 @@ export function Navbar() {
 
     if (pathname === "/" || pathname === "/login" || pathname === "/register") return null;
 
-    const NavLink = ({ item }: { item: any }) => (
+    const NavLink = ({ item }: { item: NavItem }) => (
         <Link
             href={item.href}
             className={cn(
