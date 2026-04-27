@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,23 @@ export function AmbientGame() {
     useEffect(() => {
         // Initialize Audio Context on user interaction (handled in handleInteraction) or mount
         // Browsers require interaction to resume AudioContext
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new AudioContextClass();
         setAudioCtx(ctx);
         return () => {
             ctx.close();
         };
+    }, []);
+
+    const particles = useMemo(() => {
+        return [...Array(10)].map((_, i) => ({
+            id: i,
+            x: [Math.random() * 100, Math.random() * 500],
+            y: [Math.random() * 100, Math.random() * 500],
+            duration: Math.random() * 10 + 10,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+        }));
     }, []);
 
     const playTone = useCallback((freq: number) => {
@@ -102,24 +114,24 @@ export function AmbientGame() {
                 onClick={handleClick}
             >
                 {/* Floating Ambient Particles */}
-                {[...Array(10)].map((_, i) => (
+                {particles.map((p) => (
                     <motion.div
-                        key={i}
+                        key={p.id}
                         className="absolute w-2 h-2 bg-white/20 rounded-full"
                         animate={{
-                            x: [Math.random() * 100, Math.random() * 500],
-                            y: [Math.random() * 100, Math.random() * 500],
+                            x: p.x,
+                            y: p.y,
                             opacity: [0.2, 0.5, 0.2],
                         }}
                         transition={{
-                            duration: Math.random() * 10 + 10,
+                            duration: p.duration,
                             repeat: Infinity,
                             repeatType: "reverse",
                             ease: "linear"
                         }}
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
+                            left: p.left,
+                            top: p.top,
                         }}
                     />
                 ))}
